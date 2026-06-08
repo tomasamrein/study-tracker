@@ -22,12 +22,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
+    // Por defecto oscuro (negro + azul); sólo claro si el usuario lo eligió.
     const stored = window.localStorage.getItem(KEY) as Theme | null;
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
-    const initial: Theme = stored ?? (prefersDark ? "dark" : "light");
-    setTheme(initial);
+    setTheme(stored === "light" ? "light" : "dark");
   }, []);
 
   useEffect(() => {

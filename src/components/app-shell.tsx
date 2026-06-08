@@ -39,12 +39,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-card/40 md:backdrop-blur">
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+        <div className="flex h-16 items-center gap-2.5 border-b px-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-sky-400 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/10">
             <GraduationCap className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-semibold">Study Tracker</p>
+            <p className="text-sm font-semibold tracking-tight">Study Tracker</p>
             <p className="text-xs text-muted-foreground">Ing. Informática</p>
           </div>
         </div>
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   active
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
@@ -81,10 +81,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur md:px-8">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-sky-400 text-primary-foreground shadow-md shadow-primary/30 ring-1 ring-white/10">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="text-sm font-semibold">Study Tracker</span>
+            <span className="text-sm font-semibold tracking-tight">
+              Study Tracker
+            </span>
           </div>
           <div className="hidden md:block">
             <p className="text-sm text-muted-foreground">

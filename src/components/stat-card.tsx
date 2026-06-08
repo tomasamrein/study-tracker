@@ -16,11 +16,11 @@ export function StatCard({
   accent?: string;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden transition-colors hover:border-primary/40">
       <CardContent className="flex items-start gap-3 p-4">
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-current/10 ring-1 ring-current/15",
             accent,
           )}
         >
@@ -30,7 +30,9 @@ export function StatCard({
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <p className="text-2xl font-semibold leading-tight">{value}</p>
+          <p className="font-heading text-2xl font-semibold leading-tight tabular-nums">
+            {value}
+          </p>
           {hint && (
             <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
           )}

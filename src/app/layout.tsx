@@ -1,17 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/app-shell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Cuerpo de texto: Inter (moderna y muy legible).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
+// Títulos: Space Grotesk (geométrica, con carácter).
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Monoespaciada para el temporizador y códigos.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -20,8 +31,8 @@ export const metadata: Metadata = {
     "Tracker personal de estudio: pomodoros, horas por materia, rachas y plan de estudios.",
 };
 
-// Evita el parpadeo de tema antes de la hidratación.
-const themeScript = `(function(){try{var t=localStorage.getItem('study-tracker:theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`;
+// Tema por defecto: oscuro (negro + azul). Sólo cambia si el usuario eligió claro.
+const themeScript = `(function(){try{var t=localStorage.getItem('study-tracker:theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}})();`;
 
 export default function RootLayout({
   children,
@@ -31,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <head>
