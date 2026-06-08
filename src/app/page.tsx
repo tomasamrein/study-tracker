@@ -18,6 +18,8 @@ import { STATE_META } from "@/lib/types";
 import { LoadingScreen } from "@/components/loading-screen";
 import { StatCard } from "@/components/stat-card";
 import { PlanProgress } from "@/components/plan-progress";
+import { DailyGoalCard } from "@/components/rewards/daily-goal-card";
+import { AchievementsGrid } from "@/components/rewards/achievements-grid";
 import { SubjectPie } from "@/components/charts/subject-pie";
 import { PeriodBars } from "@/components/charts/period-bars";
 import { StateBadge } from "@/components/state-badge";
@@ -65,6 +67,9 @@ export default function DashboardPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Meta diaria */}
+      <DailyGoalCard />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -174,6 +179,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Logros / recompensas */}
+      <AchievementsGrid />
 
       <p className="text-center text-xs text-muted-foreground">
         {STATE_META.aprobada.label} y {STATE_META.promocionada.label} cuentan como

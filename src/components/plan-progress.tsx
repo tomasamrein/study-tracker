@@ -16,9 +16,12 @@ export function PlanProgress({ subjects }: { subjects: Subject[] }) {
     ? Math.round((doneObl / obligatorias.length) * 100)
     : 0;
 
+  // Los cursos de ingreso (incluido Articulación Matemática) son trámite previo
+  // y no cuentan como materias de la carrera.
+  const careerSubjects = subjects.filter((s) => s.category !== "ingreso");
   const counts = SUBJECT_STATES.reduce(
     (acc, st) => {
-      acc[st] = subjects.filter((s) => s.state === st).length;
+      acc[st] = careerSubjects.filter((s) => s.state === st).length;
       return acc;
     },
     {} as Record<SubjectState, number>,

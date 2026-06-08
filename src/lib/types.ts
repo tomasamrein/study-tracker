@@ -61,9 +61,17 @@ export interface AppState {
   subjects: Subject[];
   sessions: StudySession[];
   settings: PomodoroSettings;
+  /** Meta diaria de estudio en minutos. */
+  dailyGoalMinutes: number;
+  /** Link o URI de Spotify para el reproductor (playlist/álbum/track). */
+  spotifyUri: string | null;
+  /** Última fecha (yyyy-mm-dd) en que se festejó la meta cumplida. */
+  lastGoalCelebrated: string | null;
   /** Versión del esquema de datos, por si hay migraciones futuras. */
   version: number;
 }
+
+export const DEFAULT_DAILY_GOAL_MINUTES = 120;
 
 export const DEFAULT_POMODORO_SETTINGS: PomodoroSettings = {
   focusMinutes: 25,

@@ -7,6 +7,7 @@ import { usePomodoroContext } from "@/lib/pomodoro-context";
 import { type Phase } from "@/lib/use-pomodoro";
 import { STATE_META } from "@/lib/types";
 import { LoadingScreen } from "@/components/loading-screen";
+import { SpotifyPlayer } from "@/components/spotify/spotify-player";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -240,6 +241,8 @@ export default function PomodoroPage() {
           </CardContent>
         </Card>
       </div>
+
+      <SpotifyPlayer />
     </div>
   );
 }

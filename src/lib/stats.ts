@@ -34,6 +34,18 @@ export function totalMinutes(sessions: StudySession[]): number {
   return sessions.reduce((acc, s) => acc + s.minutes, 0);
 }
 
+/** Minutos estudiados en un día concreto (por defecto hoy). */
+export function todayMinutes(
+  sessions: StudySession[],
+  now: Date = new Date(),
+): number {
+  const key = format(now, DAY_KEY);
+  return sessions.reduce(
+    (acc, s) => (format(parseISO(s.startedAt), DAY_KEY) === key ? acc + s.minutes : acc),
+    0,
+  );
+}
+
 export interface SubjectHours {
   subjectId: string;
   name: string;

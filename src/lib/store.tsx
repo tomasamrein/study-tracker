@@ -13,6 +13,7 @@ import { STUDY_PLAN } from "./study-plan";
 import { loadState, saveState, storageBackend } from "./storage";
 import { useAuth } from "./auth";
 import {
+  DEFAULT_DAILY_GOAL_MINUTES,
   DEFAULT_POMODORO_SETTINGS,
   type AppState,
   type PomodoroSettings,
@@ -27,6 +28,9 @@ function freshState(): AppState {
     subjects: STUDY_PLAN.map((s) => ({ ...s })),
     sessions: [],
     settings: { ...DEFAULT_POMODORO_SETTINGS },
+    dailyGoalMinutes: DEFAULT_DAILY_GOAL_MINUTES,
+    spotifyUri: null,
+    lastGoalCelebrated: null,
     version: STATE_VERSION,
   };
 }
@@ -42,6 +46,9 @@ function mergeWithSeed(saved: AppState): AppState {
     subjects: merged,
     sessions: saved.sessions ?? [],
     settings: { ...DEFAULT_POMODORO_SETTINGS, ...(saved.settings ?? {}) },
+    dailyGoalMinutes: saved.dailyGoalMinutes ?? DEFAULT_DAILY_GOAL_MINUTES,
+    spotifyUri: saved.spotifyUri ?? null,
+    lastGoalCelebrated: saved.lastGoalCelebrated ?? null,
     version: STATE_VERSION,
   };
 }
@@ -56,12 +63,18 @@ interface StoreValue {
   subjects: Subject[];
   sessions: StudySession[];
   settings: PomodoroSettings;
+  dailyGoalMinutes: number;
+  spotifyUri: string | null;
+  lastGoalCelebrated: string | null;
   updateSubject: (id: string, patch: Partial<Subject>) => void;
   addSubject: (subject: Omit<Subject, "id"> & { id?: string }) => void;
   deleteSubject: (id: string) => void;
   addSession: (session: Omit<StudySession, "id">) => void;
   deleteSession: (id: string) => void;
   updateSettings: (patch: Partial<PomodoroSettings>) => void;
+  setDailyGoal: (minutes: number) => void;
+  setSpotifyUri: (uri: string | null) => void;
+  markGoalCelebrated: (dayKey: string) => void;
   resetAll: () => void;
   importState: (state: AppState) => void;
   exportState: () => AppState;
@@ -156,6 +169,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, settings: { ...prev.settings, ...patch } }));
   }, []);
 
+  const setDailyGoal = useCallback((minutes: number) => {
+    setState((prev) => ({ ...prev, dailyGoalMinutes: Math.max(0, minutes) }));
+  }, []);
+
+  const setSpotifyUri = useCallback((uri: string | null) => {
+    setState((prev) => ({ ...prev, spotifyUri: uri }));
+  }, []);
+
+  const markGoalCelebrated = useCallback((dayKey: string) => {
+    setState((prev) => ({ ...prev, lastGoalCelebrated: dayKey }));
+  }, []);
+
   const resetAll = useCallback(() => {
     setState(freshState());
   }, []);
@@ -173,12 +198,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       subjects: state.subjects,
       sessions: state.sessions,
       settings: state.settings,
+      dailyGoalMinutes: state.dailyGoalMinutes,
+      spotifyUri: state.spotifyUri,
+      lastGoalCelebrated: state.lastGoalCelebrated,
       updateSubject,
       addSubject,
       deleteSubject,
       addSession,
       deleteSession,
       updateSettings,
+      setDailyGoal,
+      setSpotifyUri,
+      markGoalCelebrated,
       resetAll,
       importState,
       exportState,
@@ -192,6 +223,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addSession,
       deleteSession,
       updateSettings,
+      setDailyGoal,
+      setSpotifyUri,
+      markGoalCelebrated,
       resetAll,
       importState,
       exportState,
