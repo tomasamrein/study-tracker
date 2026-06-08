@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { BrandIcon } from "@/components/brand-icon";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -40,9 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:bg-card/40 md:backdrop-blur">
         <div className="flex h-16 items-center gap-2.5 border-b px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-sky-400 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/10">
-            <GraduationCap className="h-5 w-5" />
-          </div>
+          <BrandIcon className="h-9 w-9" />
           <div className="leading-tight">
             <p className="text-sm font-semibold tracking-tight">Study Tracker</p>
             <p className="text-xs text-muted-foreground">Ing. Informática</p>
@@ -81,15 +80,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur md:px-8">
           <div className="flex items-center gap-2 md:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-sky-400 text-primary-foreground shadow-md shadow-primary/30 ring-1 ring-white/10">
-              <GraduationCap className="h-4 w-4" />
-            </div>
+            <BrandIcon className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
             <span className="text-sm font-semibold tracking-tight">
               Study Tracker
             </span>
           </div>
-          <div className="hidden md:block">
-            <p className="text-sm text-muted-foreground">
+          <div className="hidden items-center gap-2.5 md:flex">
+            <BrandIcon className="h-8 w-8 rounded-lg" iconClassName="h-4 w-4" />
+            <p className="text-sm font-medium">
               {NAV.find((n) =>
                 n.href === "/" ? pathname === "/" : pathname.startsWith(n.href),
               )?.label ?? "Study Tracker"}

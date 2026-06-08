@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { Pause, Play, RotateCcw, SkipForward, Coffee, Brain } from "lucide-react";
-import { toast } from "sonner";
 import { useStore } from "@/lib/store";
-import { usePomodoro, type Phase } from "@/lib/use-pomodoro";
+import { usePomodoroContext } from "@/lib/pomodoro-context";
+import { type Phase } from "@/lib/use-pomodoro";
 import { STATE_META } from "@/lib/types";
 import { LoadingScreen } from "@/components/loading-screen";
 import { Button } from "@/components/ui/button";
@@ -35,32 +35,10 @@ const PHASE_META: Record<Phase, { label: string; color: string; icon: typeof Bra
   long: { label: "Descanso largo", color: "#06b6d4", icon: Coffee },
 };
 
-function beep() {
-  try {
-    const Ctx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
-  } catch {
-    /* sin audio disponible */
-  }
-}
-
 export default function PomodoroPage() {
-  const { loaded, subjects, settings, updateSettings, addSession } = useStore();
-  const selectedRef = useRef<string>("");
+  const { loaded, subjects, settings, updateSettings } = useStore();
+  const pomo = usePomodoroContext();
+  const { subjectId, setSubjectId } = pomo;
 
   const sortedSubjects = useMemo(() => {
     const priority = ["cursando", "regular", "recursando"];
@@ -70,43 +48,6 @@ export default function PomodoroPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
     return { active, rest };
   }, [subjects]);
-
-  const defaultSubject =
-    sortedSubjects.active[0]?.id ?? sortedSubjects.rest[0]?.id ?? "";
-  if (!selectedRef.current) selectedRef.current = defaultSubject;
-
-  const handleFocusComplete = useCallback(
-    (minutes: number) => {
-      const subjectId = selectedRef.current;
-      if (settings.soundEnabled) beep();
-      if (!subjectId) {
-        toast.warning("Foco completado, pero no había materia seleccionada.");
-        return;
-      }
-      addSession({
-        subjectId,
-        startedAt: new Date(Date.now() - minutes * 60_000).toISOString(),
-        minutes,
-        source: "pomodoro",
-      });
-      const name = subjects.find((s) => s.id === subjectId)?.name ?? "materia";
-      toast.success(`+${minutes} min registrados en ${name} 🎉`);
-    },
-    [addSession, settings.soundEnabled, subjects],
-  );
-
-  const handlePhaseChange = useCallback(
-    (next: Phase) => {
-      if (settings.soundEnabled && next !== "focus") beep();
-    },
-    [settings.soundEnabled],
-  );
-
-  const pomo = usePomodoro({
-    settings,
-    onFocusComplete: handleFocusComplete,
-    onPhaseChange: handlePhaseChange,
-  });
 
   if (!loaded) return <LoadingScreen />;
 
@@ -202,10 +143,7 @@ export default function PomodoroPage() {
               <Label className="mb-1.5 block text-xs text-muted-foreground">
                 Materia que estás estudiando
               </Label>
-              <Select
-                defaultValue={selectedRef.current}
-                onValueChange={(v) => (selectedRef.current = v)}
-              >
+              <Select value={subjectId} onValueChange={setSubjectId}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Elegí una materia" />
                 </SelectTrigger>
