@@ -58,9 +58,16 @@ export function SpotifyPlayer() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const justConnected = await handleSpotifyRedirect();
+      try {
+        const justConnected = await handleSpotifyRedirect();
+        if (!active) return;
+        if (justConnected) toast.success("Spotify vinculado 🎧");
+      } catch (err) {
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : "Error al conectar Spotify";
+        toast.error(msg, { duration: 10000 });
+      }
       if (!active) return;
-      if (justConnected) toast.success("Spotify vinculado 🎧");
       if (isSpotifyConnected()) {
         setConnected(true);
         await loadAccount();

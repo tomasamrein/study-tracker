@@ -131,36 +131,62 @@ export async function beginSpotifyAuth(): Promise<void> {
   window.location.href = `${AUTH_URL}?${params.toString()}`;
 }
 
-/** Procesa el `?code=` tras volver de Spotify. Devuelve true si conectó. */
+/** Procesa el `?code=` tras volver de Spotify. Devuelve true si conectó, lanza error con mensaje legible si falla. */
 export async function handleSpotifyRedirect(): Promise<boolean> {
   if (!CLIENT_ID) return false;
   const url = new URL(window.location.href);
+
+  // Spotify devuelve ?error= si el usuario cancela o hay un problema de configuración.
+  const spotifyError = url.searchParams.get("error");
+  if (spotifyError) {
+    url.searchParams.delete("error");
+    url.searchParams.delete("state");
+    window.history.replaceState({}, "", url.pathname);
+    throw new Error(
+      spotifyError === "access_denied"
+        ? "Cancelaste la autorización de Spotify."
+        : `Spotify devolvió un error: ${spotifyError}`,
+    );
+  }
+
   const code = url.searchParams.get("code");
   const verifier = localStorage.getItem(VERIFIER_KEY);
   if (!code || !verifier) return false;
-  try {
-    const res = await fetch(TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri(),
-        code_verifier: verifier,
-      }),
-    });
-    localStorage.removeItem(VERIFIER_KEY);
-    // Limpiar la URL pase lo que pase.
-    url.searchParams.delete("code");
-    url.searchParams.delete("state");
-    window.history.replaceState({}, "", url.pathname);
-    if (!res.ok) return false;
-    saveTokens(await res.json());
-    return true;
-  } catch {
-    return false;
+
+  // Limpiar la URL antes de hacer el fetch.
+  url.searchParams.delete("code");
+  url.searchParams.delete("state");
+  window.history.replaceState({}, "", url.pathname);
+  localStorage.removeItem(VERIFIER_KEY);
+
+  const redirectUrl = redirectUri();
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: CLIENT_ID,
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUrl,
+      code_verifier: verifier,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const hint = (body as { error_description?: string }).error_description ?? res.statusText;
+    // El error más común: el redirect_uri registrado en el Dashboard no coincide.
+    if ((body as { error?: string }).error === "invalid_grant") {
+      throw new Error(
+        `El Redirect URI registrado en tu app de Spotify no coincide.\n` +
+        `Asegurate de agregar exactamente: ${redirectUrl}`,
+      );
+    }
+    throw new Error(`Error al obtener tokens de Spotify: ${hint}`);
   }
+
+  saveTokens(await res.json());
+  return true;
 }
 
 // ── API ─────────────────────────────────────────────────────────────
