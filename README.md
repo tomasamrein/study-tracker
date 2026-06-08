@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Study Tracker 🎓
 
-## Getting Started
+Tracker de estudio personal para la carrera de **Ingeniería en Informática**
+(UNL · FICH · Plan 2020). Construido con **Next.js + Tailwind + shadcn/ui** y
+persistencia opcional en **Firebase**.
 
-First, run the development server:
+## Funcionalidades
+
+- **Dashboard** con rachas de estudio (actual y máxima), resumen semanal y
+  mensual, gráfico circular de horas por materia y avance de la carrera.
+- **Pomodoro personalizable**: foco, descanso corto/largo, focos por ciclo,
+  auto-inicio y sonido. Cada foco completado suma horas a la materia elegida.
+- **Plan de estudios editable**: cambiá el estado de cada materia
+  (Pendiente · En curso · Regular · Aprobada · Promocionada · Recursando ·
+  Libre), nota y fecha. Buscador y filtros por estado y categoría. Podés
+  agregar optativas/electivas.
+- **Estadísticas**: resúmenes semanal/mensual, últimos 30 días, gráfico
+  circular, historial de sesiones y backup (exportar/importar/reiniciar).
+- **Tema claro/oscuro** y diseño responsive (sidebar en desktop, barra inferior
+  en mobile).
+
+## Cómo correrlo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí <http://localhost:3000>. **Funciona inmediatamente** guardando los datos
+en el navegador (localStorage), sin necesidad de configurar nada.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Conectar Firebase (opcional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Para sincronizar los datos en la nube entre dispositivos:
 
-## Learn More
+1. Creá un proyecto en <https://console.firebase.google.com/>.
+2. Agregá una **Web App** (`</>`) y copiá el `firebaseConfig`.
+3. Activá **Firestore Database**.
+4. Copiá `.env.example` a `.env.local` y completá las claves
+   `NEXT_PUBLIC_FIREBASE_*`.
+5. Reiniciá `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+La app detecta las claves automáticamente: cuando están presentes guarda en
+Firestore (con respaldo local), y si no, usa sólo localStorage. El estado de la
+conexión se muestra en la barra lateral.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Los datos se guardan en un único documento `studyTracker/state`. Para una app
+> personal de un solo usuario, ajustá las reglas de Firestore según tu nivel de
+> privacidad deseado.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estructura
 
-## Deploy on Vercel
+```
+src/
+├─ app/                 # Rutas: dashboard, pomodoro, plan, estadisticas
+├─ components/          # UI (shell, charts, plan, stats, shadcn/ui)
+└─ lib/
+   ├─ study-plan.ts     # Plan de estudios semillado (desde docs/plan_estudios.docx)
+   ├─ types.ts          # Modelo de datos y estados
+   ├─ stats.ts          # Rachas, resúmenes y horas por materia
+   ├─ store.tsx         # Estado global (React Context) + persistencia
+   ├─ storage.ts        # Firestore con fallback a localStorage
+   └─ use-pomodoro.ts   # Lógica del temporizador
+docs/plan_estudios.docx # Plan original
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Build de producción
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build && npm start
+```
