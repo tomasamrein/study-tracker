@@ -1,8 +1,11 @@
 // Integración con Spotify mediante OAuth 2.0 con PKCE (sin client secret).
-// El Client ID es público y se lee de NEXT_PUBLIC_SPOTIFY_CLIENT_ID.
-// Si no está configurado, el reproductor sigue funcionando pegando un link.
-
-const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+// El Client ID es público (en PKCE no es un secreto): los redirect URIs quedan
+// fijados en el Dashboard de Spotify, así que se puede embeber en el código.
+// Se puede sobreescribir con NEXT_PUBLIC_SPOTIFY_CLIENT_ID, pero hay un default
+// para que la vinculación funcione sin depender de variables de entorno.
+const DEFAULT_CLIENT_ID = "8e83ca24a6734b819325f3b2525ddeff";
+const CLIENT_ID =
+  process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || DEFAULT_CLIENT_ID;
 export const isSpotifyConfigured = Boolean(CLIENT_ID);
 
 const SCOPES =
@@ -208,7 +211,11 @@ export async function fetchPlaylists(): Promise<SpotifyPlaylist[]> {
   const data = await api<{ items: SpotifyPlaylist[] }>(
     "/me/playlists?limit=50",
   );
-  return (data?.items ?? []).filter(Boolean);
+  // Spotify puede devolver entradas nulas o parciales (playlists corruptas,
+  // Blends, etc.). Nos quedamos sólo con las que tienen la forma esperada.
+  return (data?.items ?? []).filter(
+    (p): p is SpotifyPlaylist => Boolean(p?.id) && typeof p.name === "string",
+  );
 }
 
 // ── Embed ───────────────────────────────────────────────────────────

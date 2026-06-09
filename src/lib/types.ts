@@ -46,6 +46,18 @@ export interface StudySession {
   note?: string;
 }
 
+export interface TodoItem {
+  id: string;
+  text: string;
+  done: boolean;
+  /** Día al que pertenece la tarea, en formato ISO (yyyy-mm-dd). */
+  day: string;
+  /** Materia opcional asociada a la tarea. */
+  subjectId?: string | null;
+  /** ISO date-time de creación, para ordenar dentro del día. */
+  createdAt: string;
+}
+
 export interface PomodoroSettings {
   focusMinutes: number;
   shortBreakMinutes: number;
@@ -57,9 +69,19 @@ export interface PomodoroSettings {
   soundEnabled: boolean;
 }
 
+/** Datos descriptivos del plan de estudios (carrera, universidad). */
+export interface PlanMeta {
+  career: string;
+  university?: string;
+  /** Línea secundaria libre, ej. "Plan 2018" o "Legajo 12345". */
+  subtitle?: string;
+}
+
 export interface AppState {
   subjects: Subject[];
   sessions: StudySession[];
+  /** Tareas (ToDo) organizadas por día. */
+  todos: TodoItem[];
   settings: PomodoroSettings;
   /** Meta diaria de estudio en minutos. */
   dailyGoalMinutes: number;
@@ -67,6 +89,13 @@ export interface AppState {
   spotifyUri: string | null;
   /** Última fecha (yyyy-mm-dd) en que se festejó la meta cumplida. */
   lastGoalCelebrated: string | null;
+  /**
+   * true si el usuario cargó su propio plan de estudios. En ese caso no se
+   * vuelve a sembrar el plan por defecto al cargar/mergear el estado.
+   */
+  customPlan?: boolean;
+  /** Metadatos del plan cargado por el usuario; null usa el plan por defecto. */
+  planMeta?: PlanMeta | null;
   /** Versión del esquema de datos, por si hay migraciones futuras. */
   version: number;
 }

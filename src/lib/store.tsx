@@ -16,9 +16,11 @@ import {
   DEFAULT_DAILY_GOAL_MINUTES,
   DEFAULT_POMODORO_SETTINGS,
   type AppState,
+  type PlanMeta,
   type PomodoroSettings,
   type StudySession,
   type Subject,
+  type TodoItem,
 } from "./types";
 
 const STATE_VERSION = 1;
@@ -27,30 +29,44 @@ function freshState(): AppState {
   return {
     subjects: STUDY_PLAN.map((s) => ({ ...s })),
     sessions: [],
+    todos: [],
     settings: { ...DEFAULT_POMODORO_SETTINGS },
     dailyGoalMinutes: DEFAULT_DAILY_GOAL_MINUTES,
     spotifyUri: null,
     lastGoalCelebrated: null,
+    customPlan: false,
+    planMeta: null,
     version: STATE_VERSION,
   };
 }
 
-/** Combina el plan semillado con el estado guardado, sumando materias nuevas del plan. */
+/** Combina el estado guardado con el plan por defecto, sumando materias nuevas. */
 function mergeWithSeed(saved: AppState): AppState {
-  const byId = new Map(saved.subjects.map((s) => [s.id, s]));
-  const merged = [...saved.subjects];
-  for (const seed of STUDY_PLAN) {
-    if (!byId.has(seed.id)) merged.push({ ...seed });
-  }
-  return {
-    subjects: merged,
+  const base = {
     sessions: saved.sessions ?? [],
+    todos: saved.todos ?? [],
     settings: { ...DEFAULT_POMODORO_SETTINGS, ...(saved.settings ?? {}) },
     dailyGoalMinutes: saved.dailyGoalMinutes ?? DEFAULT_DAILY_GOAL_MINUTES,
     spotifyUri: saved.spotifyUri ?? null,
     lastGoalCelebrated: saved.lastGoalCelebrated ?? null,
+    customPlan: saved.customPlan ?? false,
+    planMeta: saved.planMeta ?? null,
     version: STATE_VERSION,
   };
+
+  // Si el usuario cargó su propio plan, respetamos sus materias tal cual
+  // (no re-inyectamos el plan por defecto).
+  if (saved.customPlan) {
+    return { ...base, subjects: saved.subjects ?? [] };
+  }
+
+  // Plan por defecto: sumamos materias nuevas del seed que aún no estén.
+  const byId = new Map((saved.subjects ?? []).map((s) => [s.id, s]));
+  const merged = [...(saved.subjects ?? [])];
+  for (const seed of STUDY_PLAN) {
+    if (!byId.has(seed.id)) merged.push({ ...seed });
+  }
+  return { ...base, subjects: merged };
 }
 
 function uid(): string {
@@ -62,21 +78,30 @@ interface StoreValue {
   backend: "firebase" | "local";
   subjects: Subject[];
   sessions: StudySession[];
+  todos: TodoItem[];
   settings: PomodoroSettings;
   dailyGoalMinutes: number;
   spotifyUri: string | null;
   lastGoalCelebrated: string | null;
+  planMeta: PlanMeta | null;
   updateSubject: (id: string, patch: Partial<Subject>) => void;
   addSubject: (subject: Omit<Subject, "id"> & { id?: string }) => void;
   deleteSubject: (id: string) => void;
   addSession: (session: Omit<StudySession, "id">) => void;
   deleteSession: (id: string) => void;
+  addTodo: (todo: Omit<TodoItem, "id" | "createdAt" | "done"> & { done?: boolean }) => void;
+  toggleTodo: (id: string) => void;
+  updateTodo: (id: string, patch: Partial<Omit<TodoItem, "id">>) => void;
+  deleteTodo: (id: string) => void;
+  clearCompletedTodos: (day?: string) => void;
   updateSettings: (patch: Partial<PomodoroSettings>) => void;
   setDailyGoal: (minutes: number) => void;
   setSpotifyUri: (uri: string | null) => void;
   markGoalCelebrated: (dayKey: string) => void;
   resetAll: () => void;
   importState: (state: AppState) => void;
+  /** Reemplaza el plan de estudios por uno propio del usuario. */
+  importPlan: (subjects: Subject[], meta?: PlanMeta | null) => void;
   exportState: () => AppState;
 }
 
@@ -165,6 +190,59 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const addTodo = useCallback(
+    (todo: Omit<TodoItem, "id" | "createdAt" | "done"> & { done?: boolean }) => {
+      setState((prev) => ({
+        ...prev,
+        todos: [
+          ...prev.todos,
+          {
+            done: false,
+            ...todo,
+            id: uid(),
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }));
+    },
+    [],
+  );
+
+  const toggleTodo = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      todos: prev.todos.map((t) =>
+        t.id === id ? { ...t, done: !t.done } : t,
+      ),
+    }));
+  }, []);
+
+  const updateTodo = useCallback(
+    (id: string, patch: Partial<Omit<TodoItem, "id">>) => {
+      setState((prev) => ({
+        ...prev,
+        todos: prev.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      }));
+    },
+    [],
+  );
+
+  const deleteTodo = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      todos: prev.todos.filter((t) => t.id !== id),
+    }));
+  }, []);
+
+  const clearCompletedTodos = useCallback((day?: string) => {
+    setState((prev) => ({
+      ...prev,
+      todos: prev.todos.filter(
+        (t) => !t.done || (day !== undefined && t.day !== day),
+      ),
+    }));
+  }, []);
+
   const updateSettings = useCallback((patch: Partial<PomodoroSettings>) => {
     setState((prev) => ({ ...prev, settings: { ...prev.settings, ...patch } }));
   }, []);
@@ -189,6 +267,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState(mergeWithSeed(incoming));
   }, []);
 
+  const importPlan = useCallback(
+    (subjects: Subject[], meta?: PlanMeta | null) => {
+      setState((prev) => {
+        const ids = new Set(subjects.map((s) => s.id));
+        return {
+          ...prev,
+          subjects,
+          // Conservamos sólo las sesiones que apunten a materias que siguen existiendo.
+          sessions: prev.sessions.filter((s) => ids.has(s.subjectId)),
+          customPlan: true,
+          planMeta: meta ?? prev.planMeta ?? null,
+        };
+      });
+    },
+    [],
+  );
+
   const exportState = useCallback(() => state, [state]);
 
   const value = useMemo<StoreValue>(
@@ -197,21 +292,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       backend: storageBackend,
       subjects: state.subjects,
       sessions: state.sessions,
+      todos: state.todos,
       settings: state.settings,
       dailyGoalMinutes: state.dailyGoalMinutes,
       spotifyUri: state.spotifyUri,
       lastGoalCelebrated: state.lastGoalCelebrated,
+      planMeta: state.planMeta ?? null,
       updateSubject,
       addSubject,
       deleteSubject,
       addSession,
       deleteSession,
+      addTodo,
+      toggleTodo,
+      updateTodo,
+      deleteTodo,
+      clearCompletedTodos,
       updateSettings,
       setDailyGoal,
       setSpotifyUri,
       markGoalCelebrated,
       resetAll,
       importState,
+      importPlan,
       exportState,
     }),
     [
@@ -222,12 +325,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deleteSubject,
       addSession,
       deleteSession,
+      addTodo,
+      toggleTodo,
+      updateTodo,
+      deleteTodo,
+      clearCompletedTodos,
       updateSettings,
       setDailyGoal,
       setSpotifyUri,
       markGoalCelebrated,
       resetAll,
       importState,
+      importPlan,
       exportState,
     ],
   );

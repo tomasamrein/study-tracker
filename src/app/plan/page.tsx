@@ -17,6 +17,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { StateBadge } from "@/components/state-badge";
 import { PlanProgress } from "@/components/plan-progress";
 import { AddSubjectDialog } from "@/components/plan/add-subject-dialog";
+import { ImportPlanDialog } from "@/components/plan/import-plan-dialog";
 import { EditSubjectDialog } from "@/components/plan/edit-subject-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,7 +40,7 @@ const CATEGORY_ORDER: SubjectCategory[] = [
 ];
 
 export default function PlanPage() {
-  const { loaded, subjects, sessions } = useStore();
+  const { loaded, subjects, sessions, planMeta } = useStore();
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<SubjectState | "all">("all");
   const [catFilter, setCatFilter] = useState<SubjectCategory | "all">("all");
@@ -92,14 +93,29 @@ export default function PlanPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Plan de estudios</h1>
-          <p className="text-sm text-muted-foreground">
-            {PLAN_META.career} · {PLAN_META.university}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {PLAN_META.proposal} · Legajo {PLAN_META.legajo}
-          </p>
+          {planMeta ? (
+            <p className="text-sm text-muted-foreground">
+              {planMeta.career}
+              {planMeta.university ? ` · ${planMeta.university}` : ""}
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {PLAN_META.career} · {PLAN_META.university}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {PLAN_META.proposal} · Legajo {PLAN_META.legajo}
+              </p>
+            </>
+          )}
+          {planMeta?.subtitle && (
+            <p className="text-xs text-muted-foreground">{planMeta.subtitle}</p>
+          )}
         </div>
-        <AddSubjectDialog />
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportPlanDialog />
+          <AddSubjectDialog />
+        </div>
       </div>
 
       <PlanProgress subjects={subjects} />

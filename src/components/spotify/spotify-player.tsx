@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { cn } from "@/lib/utils";
 
 // Playlists públicas de concentración (no requieren vincular cuenta).
@@ -38,7 +39,7 @@ const PRESETS: { name: string; id: string }[] = [
   { name: "Peaceful Piano", id: "37i9dQZF1DX4sWSpwq3LiO" },
 ];
 
-export function SpotifyPlayer() {
+function SpotifyPlayerInner() {
   const { spotifyUri, setSpotifyUri } = useStore();
   const [connected, setConnected] = useState(false);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
@@ -190,7 +191,7 @@ export function SpotifyPlayer() {
                                 {p.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {p.tracks.total} temas
+                                {p.tracks?.total ?? 0} temas
                               </p>
                             </div>
                             {active && (
@@ -256,5 +257,31 @@ export function SpotifyPlayer() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Fallback si el módulo de Spotify falla: no debe tumbar la página de Pomodoro. */
+function SpotifyFallback() {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Music className="h-4 w-4 text-emerald-500" />
+          Música para concentrarte
+        </CardTitle>
+        <CardDescription>
+          No pudimos cargar el reproductor de Spotify. El resto del pomodoro
+          sigue funcionando normalmente.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  );
+}
+
+export function SpotifyPlayer() {
+  return (
+    <ErrorBoundary fallback={<SpotifyFallback />}>
+      <SpotifyPlayerInner />
+    </ErrorBoundary>
   );
 }

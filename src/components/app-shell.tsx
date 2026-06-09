@@ -6,6 +6,7 @@ import {
   BarChart3,
   GraduationCap,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   Moon,
   Sun,
@@ -27,6 +28,7 @@ import {
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/pomodoro", label: "Pomodoro", icon: Timer },
+  { href: "/todos", label: "Tareas", icon: ListTodo },
   { href: "/plan", label: "Plan de estudios", icon: GraduationCap },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3 },
 ];
@@ -116,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Nav inferior (mobile) */}
-      <nav className="sticky bottom-0 z-30 grid grid-cols-4 border-t bg-background/90 backdrop-blur md:hidden">
+      <nav className="sticky bottom-0 z-30 grid grid-cols-5 border-t bg-background/90 backdrop-blur md:hidden">
         {NAV.map((item) => {
           const active =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
