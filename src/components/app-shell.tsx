@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
   Timer,
+  Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -30,13 +31,15 @@ const NAV = [
   { href: "/pomodoro", label: "Pomodoro", icon: Timer },
   { href: "/todos", label: "Tareas", icon: ListTodo },
   { href: "/plan", label: "Plan de estudios", icon: GraduationCap },
+  { href: "/ranking", label: "Ranking", icon: Trophy },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3 },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
-  const { backend } = useStore();
+  const { backend, planMeta } = useStore();
+  const careerLabel = planMeta?.career ?? "Ing. Informática";
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -46,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <BrandIcon className="h-9 w-9" />
           <div className="leading-tight">
             <p className="text-sm font-semibold tracking-tight">Study Tracker</p>
-            <p className="text-xs text-muted-foreground">Ing. Informática</p>
+            <p className="truncate text-xs text-muted-foreground">{careerLabel}</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1 p-3">
@@ -118,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Nav inferior (mobile) */}
-      <nav className="sticky bottom-0 z-30 grid grid-cols-5 border-t bg-background/90 backdrop-blur md:hidden">
+      <nav className="sticky bottom-0 z-30 grid grid-cols-6 border-t bg-background/90 backdrop-blur md:hidden">
         {NAV.map((item) => {
           const active =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

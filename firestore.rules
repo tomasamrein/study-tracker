@@ -7,5 +7,12 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // Tabla de posiciones: cualquier usuario autenticado puede leer todas las
+    // entradas (para armar el ranking), pero cada uno sólo escribe la suya.
+    match /leaderboard/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
   }
 }

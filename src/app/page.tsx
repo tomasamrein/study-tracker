@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { Flame, Clock, CalendarRange, Trophy, BookOpen, Timer } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+import { RankingCard } from "@/components/ranking/ranking-card";
 import {
   computeStreak,
   formatHours,
@@ -34,6 +36,8 @@ import {
 
 export default function DashboardPage() {
   const { loaded, subjects, sessions } = useStore();
+  const { user } = useAuth();
+  const firstName = user?.name?.split(" ")[0] ?? null;
 
   const data = useMemo(() => {
     const streak = computeStreak(sessions);
@@ -53,7 +57,9 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hola, Tomás 👋</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Hola{firstName ? `, ${firstName}` : ""} 👋
+          </h1>
           <p className="text-sm text-muted-foreground">
             {data.streak.studiedToday
               ? "Ya estudiaste hoy. ¡Seguí así!"
@@ -101,6 +107,9 @@ export default function DashboardPage() {
           accent="text-violet-500"
         />
       </div>
+
+      {/* Ranking entre usuarios (sólo modo nube) */}
+      <RankingCard />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Pie horas por materia */}

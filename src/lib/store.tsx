@@ -9,9 +9,16 @@ import {
   useRef,
   useState,
 } from "react";
-import { STUDY_PLAN } from "./study-plan";
 import { loadState, saveState, storageBackend } from "./storage";
-import { useAuth } from "./auth";
+import { useAuth, type AuthUser } from "./auth";
+import { careerLabel, resolvePlan } from "./plans";
+import { publishLeaderboardEntry } from "./leaderboard";
+import {
+  computeStreak,
+  todayMinutes,
+  totalMinutes,
+  weeklySummary,
+} from "./stats";
 import {
   DEFAULT_DAILY_GOAL_MINUTES,
   DEFAULT_POMODORO_SETTINGS,
@@ -25,9 +32,10 @@ import {
 
 const STATE_VERSION = 1;
 
-function freshState(): AppState {
+function freshState(user?: AuthUser | null): AppState {
+  const { subjects, meta } = resolvePlan(user ?? null);
   return {
-    subjects: STUDY_PLAN.map((s) => ({ ...s })),
+    subjects,
     sessions: [],
     todos: [],
     settings: { ...DEFAULT_POMODORO_SETTINGS },
@@ -35,13 +43,13 @@ function freshState(): AppState {
     spotifyUri: null,
     lastGoalCelebrated: null,
     customPlan: false,
-    planMeta: null,
+    planMeta: meta,
     version: STATE_VERSION,
   };
 }
 
 /** Combina el estado guardado con el plan por defecto, sumando materias nuevas. */
-function mergeWithSeed(saved: AppState): AppState {
+function mergeWithSeed(saved: AppState, user?: AuthUser | null): AppState {
   const base = {
     sessions: saved.sessions ?? [],
     todos: saved.todos ?? [],
@@ -60,10 +68,12 @@ function mergeWithSeed(saved: AppState): AppState {
     return { ...base, subjects: saved.subjects ?? [] };
   }
 
-  // Plan por defecto: sumamos materias nuevas del seed que aún no estén.
+  // Plan por defecto: sumamos materias nuevas del seed (el que corresponda al
+  // usuario) que aún no estén.
+  const seedSubjects = resolvePlan(user ?? null).subjects;
   const byId = new Map((saved.subjects ?? []).map((s) => [s.id, s]));
   const merged = [...(saved.subjects ?? [])];
-  for (const seed of STUDY_PLAN) {
+  for (const seed of seedSubjects) {
     if (!byId.has(seed.id)) merged.push({ ...seed });
   }
   return { ...base, subjects: merged };
@@ -124,7 +134,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoaded(false);
     loadState(currentUid).then((saved) => {
       if (cancelled) return;
-      setState(saved ? mergeWithSeed(saved) : freshState());
+      setState(saved ? mergeWithSeed(saved, user) : freshState(user));
       setLoaded(true);
       // Permitir guardados a partir del próximo cambio.
       requestAnimationFrame(() => {
@@ -134,6 +144,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
+    // Sólo recargamos al cambiar de cuenta (uid); `user` se lee dentro y
+    // siempre corresponde a ese mismo uid, así evitamos recargas por refresh
+    // de token que pisarían ediciones en memoria.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUid]);
 
   // Persistencia con debounce.
@@ -147,6 +161,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [state, currentUid]);
+
+  // Publicación del resumen público para el ranking (sólo en modo nube).
+  useEffect(() => {
+    if (storageBackend !== "firebase") return;
+    if (!loaded || !currentUid || currentUid === "local" || !user) return;
+    const t = setTimeout(() => {
+      const streak = computeStreak(state.sessions);
+      const week = weeklySummary(state.sessions);
+      void publishLeaderboardEntry(currentUid, {
+        uid: currentUid,
+        name: user.name ?? user.email ?? "Anónimo",
+        photoURL: user.photoURL ?? null,
+        career: careerLabel(user, state.planMeta ?? null),
+        weekMinutes: week.totalMinutes,
+        totalMinutes: totalMinutes(state.sessions),
+        todayMinutes: todayMinutes(state.sessions),
+        currentStreak: streak.current,
+        longestStreak: streak.longest,
+        studiedToday: streak.studiedToday,
+        updatedAt: new Date().toISOString(),
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [state.sessions, state.planMeta, currentUid, user, loaded]);
 
   const updateSubject = useCallback((id: string, patch: Partial<Subject>) => {
     setState((prev) => ({
@@ -260,8 +298,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resetAll = useCallback(() => {
-    setState(freshState());
-  }, []);
+    setState(freshState(user));
+  }, [user]);
 
   const importState = useCallback((incoming: AppState) => {
     setState(mergeWithSeed(incoming));
