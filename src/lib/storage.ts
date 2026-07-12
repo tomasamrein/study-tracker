@@ -1,9 +1,8 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+﻿import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "./firebase";
 import type { AppState } from "./types";
 
 const LOCAL_KEY = "study-tracker:state";
-// En modo nube, cada usuario guarda su estado en users/{uid}.
 const USERS_COLLECTION = "users";
 
 export const storageBackend: "firebase" | "local" = isFirebaseConfigured
@@ -11,24 +10,40 @@ export const storageBackend: "firebase" | "local" = isFirebaseConfigured
   : "local";
 
 export async function loadState(uid: string): Promise<AppState | null> {
+  let firebaseData: AppState | null = null;
+
   if (isFirebaseConfigured && uid !== "local") {
     const db = getDb();
     if (db) {
       try {
         const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
-        if (snap.exists()) return snap.data() as AppState;
-        return null;
+        if (snap.exists()) firebaseData = snap.data() as AppState;
       } catch (err) {
         console.error("[storage] Error leyendo de Firestore:", err);
-        // Fallback a local si Firestore falla.
       }
     }
   }
+
+  if (firebaseData) {
+    const localData = loadLocal();
+    if (localData) {
+      const localSessions = new Map(localData.sessions.map((s) => [s.id, s]));
+      const fbIds = new Set(firebaseData.sessions.map((s) => s.id));
+      const missing = localData.sessions.filter((s) => !fbIds.has(s.id));
+      if (missing.length > 0) {
+        console.log(
+          `[storage] Merge: ${missing.length} sesion(es) recuperadas de localStorage`,
+        );
+        return { ...firebaseData, sessions: [...firebaseData.sessions, ...missing] };
+      }
+    }
+    return firebaseData;
+  }
+
   return loadLocal();
 }
 
 export async function saveState(uid: string, state: AppState): Promise<void> {
-  // Siempre guardamos una copia local como respaldo/offline.
   saveLocal(state);
   if (isFirebaseConfigured && uid !== "local") {
     const db = getDb();
