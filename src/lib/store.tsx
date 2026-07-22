@@ -9,7 +9,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { loadState, saveState, storageBackend } from "./storage";
+import { loadState, saveState, syncNow, storageBackend } from "./storage";
+import { isFirebaseConfigured } from "./firebase";
 import { useAuth, type AuthUser } from "./auth";
 import { careerLabel, resolvePlan } from "./plans";
 import { publishLeaderboardEntry } from "./leaderboard";
@@ -135,9 +136,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoaded(false);
     loadState(currentUid).then((saved) => {
       if (cancelled) return;
-      setState(saved ? mergeWithSeed(saved, user) : freshState(user));
+      const merged = saved ? mergeWithSeed(saved, user) : freshState(user);
+      setState(merged);
       setLoaded(true);
-      // Permitir guardados a partir del prÃ³ximo cambio.
+      if (isFirebaseConfigured && currentUid !== "local") {
+        syncNow(currentUid, merged);
+      }
       requestAnimationFrame(() => {
         skipSave.current = false;
       });
@@ -158,7 +162,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     saveTimer.current = setTimeout(() => {
       saveState(currentUid, state).then((ok) => {
         if (!ok && storageBackend === "firebase") {
-          toast.error("Error al sincronizar con la nube. Tus datos están guardados localmente y se reintentará automáticamente.", { duration: 6000 });
+          toast.error("Error al guardar en la nube. Tus datos están seguros en localStorage.", { duration: 6000 });
         }
       });
     }, 400);

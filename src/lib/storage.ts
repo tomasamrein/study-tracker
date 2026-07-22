@@ -18,7 +18,6 @@ export const storageBackend: "firebase" | "local" = isFirebaseConfigured
 
 export async function loadState(uid: string): Promise<AppState | null> {
   let firebaseData: AppState | null = null;
-  let syncAfterLoad: AppState | null = null;
 
   if (isFirebaseConfigured && uid !== "local") {
     const db = getDb();
@@ -32,8 +31,6 @@ export async function loadState(uid: string): Promise<AppState | null> {
 
           const legacySessions: StudySession[] = data.sessions ?? [];
           let sessions: StudySession[] = [];
-          const needsMigration =
-            !data.sessionIds && legacySessions.length > 0;
 
           if (data.sessionIds && data.sessionIds.length > 0) {
             try {
@@ -63,8 +60,6 @@ export async function loadState(uid: string): Promise<AppState | null> {
 
           const { sessions: _, sessionIds: __, ...rest } = data;
           firebaseData = { ...rest, sessions } as AppState;
-
-          if (needsMigration) syncAfterLoad = firebaseData;
         }
       } catch (err) {
         console.error("[storage] Error leyendo de Firestore:", err);
@@ -84,28 +79,68 @@ export async function loadState(uid: string): Promise<AppState | null> {
         console.log(
           `[storage] Merge: ${missing.length} sesión(es) recuperadas de localStorage`,
         );
-        const merged = {
+        return {
           ...firebaseData,
           sessions: [...firebaseData.sessions, ...missing],
         };
-        syncAfterLoad = merged;
-        return merged;
       }
     }
-
-    if (syncAfterLoad) {
-      saveState(uid, syncAfterLoad).then((ok) => {
-        if (ok)
-          console.log(
-            "[storage] Sincronización en segundo plano completada",
-          );
-      });
-    }
-
     return firebaseData;
   }
 
   return loadLocal();
+}
+
+async function syncToFirebase(
+  uid: string,
+  state: AppState,
+): Promise<boolean> {
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const db = getDb();
+      if (!db) return false;
+
+      const { sessions, ...mainData } = state;
+      const sessionIds = sessions.map((s) => s.id);
+      const userRef = doc(db, USERS_COLLECTION, uid);
+      const col = collection(db, USERS_COLLECTION, uid, "sessions");
+
+      if (sessions.length < 400) {
+        const batch = writeBatch(db);
+        batch.set(userRef, { ...mainData, sessionIds });
+        for (const session of sessions) {
+          batch.set(doc(col, session.id), session);
+        }
+        await batch.commit();
+      } else {
+        await setDoc(userRef, { ...mainData, sessionIds });
+        await Promise.all(
+          sessions.map((s) => setDoc(doc(col, s.id), s)),
+        );
+      }
+
+      return true;
+    } catch (err) {
+      if (attempt < MAX_RETRIES) {
+        const delay = 1000 * attempt;
+        console.warn(
+          `[storage] Reintento ${attempt}/${MAX_RETRIES} en ${delay}ms...`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        console.error(
+          "[storage] Error escribiendo en Firestore tras",
+          MAX_RETRIES,
+          "intentos:",
+          err,
+        );
+      }
+    }
+  }
+
+  return false;
 }
 
 export async function saveState(
@@ -116,34 +151,11 @@ export async function saveState(
 
   if (!isFirebaseConfigured || uid === "local") return true;
 
-  const db = getDb();
-  if (!db) return false;
+  return syncToFirebase(uid, state);
+}
 
-  try {
-    const { sessions, ...mainData } = state;
-    const sessionIds = sessions.map((s) => s.id);
-    const userRef = doc(db, USERS_COLLECTION, uid);
-    const col = collection(db, USERS_COLLECTION, uid, "sessions");
-
-    if (sessions.length < 400) {
-      const batch = writeBatch(db);
-      batch.set(userRef, { ...mainData, sessionIds });
-      for (const session of sessions) {
-        batch.set(doc(col, session.id), session);
-      }
-      await batch.commit();
-    } else {
-      await setDoc(userRef, { ...mainData, sessionIds });
-      await Promise.all(
-        sessions.map((s) => setDoc(doc(col, s.id), s)),
-      );
-    }
-
-    return true;
-  } catch (err) {
-    console.error("[storage] Error escribiendo en Firestore:", err);
-    return false;
-  }
+export async function syncNow(uid: string, state: AppState): Promise<boolean> {
+  return syncToFirebase(uid, state);
 }
 
 function loadLocal(): AppState | null {
