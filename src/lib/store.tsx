@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   createContext,
@@ -19,6 +19,7 @@ import {
   totalMinutes,
   weeklySummary,
 } from "./stats";
+import { toast } from "sonner";
 import {
   DEFAULT_DAILY_GOAL_MINUTES,
   DEFAULT_POMODORO_SETTINGS,
@@ -62,14 +63,14 @@ function mergeWithSeed(saved: AppState, user?: AuthUser | null): AppState {
     version: STATE_VERSION,
   };
 
-  // Si el usuario cargó su propio plan, respetamos sus materias tal cual
+  // Si el usuario cargÃ³ su propio plan, respetamos sus materias tal cual
   // (no re-inyectamos el plan por defecto).
   if (saved.customPlan) {
     return { ...base, subjects: saved.subjects ?? [] };
   }
 
   // Plan por defecto: sumamos materias nuevas del seed (el que corresponda al
-  // usuario) que aún no estén.
+  // usuario) que aÃºn no estÃ©n.
   const seedSubjects = resolvePlan(user ?? null).subjects;
   const byId = new Map((saved.subjects ?? []).map((s) => [s.id, s]));
   const merged = [...(saved.subjects ?? [])];
@@ -136,7 +137,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       setState(saved ? mergeWithSeed(saved, user) : freshState(user));
       setLoaded(true);
-      // Permitir guardados a partir del próximo cambio.
+      // Permitir guardados a partir del prÃ³ximo cambio.
       requestAnimationFrame(() => {
         skipSave.current = false;
       });
@@ -144,9 +145,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-    // Sólo recargamos al cambiar de cuenta (uid); `user` se lee dentro y
-    // siempre corresponde a ese mismo uid, así evitamos recargas por refresh
-    // de token que pisarían ediciones en memoria.
+    // SÃ³lo recargamos al cambiar de cuenta (uid); `user` se lee dentro y
+    // siempre corresponde a ese mismo uid, asÃ­ evitamos recargas por refresh
+    // de token que pisarÃ­an ediciones en memoria.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUid]);
 
@@ -155,14 +156,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (skipSave.current || !currentUid) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      void saveState(currentUid, state);
+      saveState(currentUid, state).then((ok) => {
+        if (!ok && storageBackend === "firebase") {
+          toast.error("Error al sincronizar con la nube. Tus datos están guardados localmente y se reintentará automáticamente.", { duration: 6000 });
+        }
+      });
     }, 400);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [state, currentUid]);
 
-  // Publicación del resumen público para el ranking (sólo en modo nube).
+  // PublicaciÃ³n del resumen pÃºblico para el ranking (sÃ³lo en modo nube).
   useEffect(() => {
     if (storageBackend !== "firebase") return;
     if (!loaded || !currentUid || currentUid === "local" || !user) return;
@@ -171,7 +176,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const week = weeklySummary(state.sessions);
       void publishLeaderboardEntry(currentUid, {
         uid: currentUid,
-        name: user.name ?? user.email ?? "Anónimo",
+        name: user.name ?? user.email ?? "AnÃ³nimo",
         photoURL: user.photoURL ?? null,
         career: careerLabel(user, state.planMeta ?? null),
         weekMinutes: week.totalMinutes,
@@ -312,7 +317,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return {
           ...prev,
           subjects,
-          // Conservamos sólo las sesiones que apunten a materias que siguen existiendo.
+          // Conservamos sÃ³lo las sesiones que apunten a materias que siguen existiendo.
           sessions: prev.sessions.filter((s) => ids.has(s.subjectId)),
           customPlan: true,
           planMeta: meta ?? prev.planMeta ?? null,
@@ -387,3 +392,7 @@ export function useStore(): StoreValue {
   if (!ctx) throw new Error("useStore debe usarse dentro de <StoreProvider>");
   return ctx;
 }
+
+
+
+
