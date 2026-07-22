@@ -55,7 +55,8 @@ export function ManualSessionDialog() {
     }
     // Registrar a las 12:00 del día elegido para evitar saltos de zona horaria.
     const startedAt = new Date(`${date}T12:00:00`).toISOString();
-    addSession({ subjectId, startedAt, minutes: totalMin, source: "manual", note: note.trim() || undefined });
+    const trimmed = note.trim();
+    addSession({ subjectId, startedAt, minutes: totalMin, source: "manual", ...(trimmed ? { note: trimmed } : {}) });
     toast.success("Sesión registrada");
     setOpen(false);
     setNote("");

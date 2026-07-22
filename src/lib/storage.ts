@@ -12,6 +12,25 @@ import type { AppState, StudySession } from "./types";
 const LOCAL_KEY = "study-tracker:state";
 const USERS_COLLECTION = "users";
 
+/** Cola de escrituras a Firestore para evitar race conditions. */
+let writeQueue: Promise<any> = Promise.resolve();
+
+function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  writeQueue = writeQueue.then(fn, fn);
+  return writeQueue;
+}
+
+/** Elimina valores `undefined` de objetos/arrays para Firestore. */
+function clean<T>(obj: T): T {
+  if (obj === null || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(clean) as unknown as T;
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (v !== undefined) result[k] = clean(v);
+  }
+  return result as T;
+}
+
 export const storageBackend: "firebase" | "local" = isFirebaseConfigured
   ? "firebase"
   : "local";
@@ -95,52 +114,57 @@ async function syncToFirebase(
   uid: string,
   state: AppState,
 ): Promise<boolean> {
-  const MAX_RETRIES = 3;
+  return enqueue(async () => {
+    const MAX_RETRIES = 3;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const db = getDb();
-      if (!db) return false;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const db = getDb();
+        if (!db) return false;
 
-      const { sessions, ...mainData } = state;
-      const sessionIds = sessions.map((s) => s.id);
-      const userRef = doc(db, USERS_COLLECTION, uid);
-      const col = collection(db, USERS_COLLECTION, uid, "sessions");
+        const { sessions, ...mainData } = state;
+        const sessionIds = sessions.map((s) => s.id);
+        const userRef = doc(db, USERS_COLLECTION, uid);
+        const col = collection(db, USERS_COLLECTION, uid, "sessions");
 
-      if (sessions.length < 400) {
-        const batch = writeBatch(db);
-        batch.set(userRef, { ...mainData, sessionIds });
-        for (const session of sessions) {
-          batch.set(doc(col, session.id), session);
+        const cleanMain = clean({ ...mainData, sessionIds });
+        const cleanSessions = sessions.map((s) => clean(s));
+
+        if (cleanSessions.length < 400) {
+          const batch = writeBatch(db);
+          batch.set(userRef, cleanMain);
+          for (const session of cleanSessions) {
+            batch.set(doc(col, session.id), session);
+          }
+          await batch.commit();
+        } else {
+          await setDoc(userRef, cleanMain);
+          await Promise.all(
+            cleanSessions.map((s) => setDoc(doc(col, s.id), s)),
+          );
         }
-        await batch.commit();
-      } else {
-        await setDoc(userRef, { ...mainData, sessionIds });
-        await Promise.all(
-          sessions.map((s) => setDoc(doc(col, s.id), s)),
-        );
-      }
 
-      return true;
-    } catch (err) {
-      if (attempt < MAX_RETRIES) {
-        const delay = 1000 * attempt;
-        console.warn(
-          `[storage] Reintento ${attempt}/${MAX_RETRIES} en ${delay}ms...`,
-        );
-        await new Promise((r) => setTimeout(r, delay));
-      } else {
-        console.error(
-          "[storage] Error escribiendo en Firestore tras",
-          MAX_RETRIES,
-          "intentos:",
-          err,
-        );
+        return true;
+      } catch (err) {
+        if (attempt < MAX_RETRIES) {
+          const delay = 1000 * attempt;
+          console.warn(
+            `[storage] Reintento ${attempt}/${MAX_RETRIES} en ${delay}ms...`,
+          );
+          await new Promise((r) => setTimeout(r, delay));
+        } else {
+          console.error(
+            "[storage] Error escribiendo en Firestore tras",
+            MAX_RETRIES,
+            "intentos:",
+            err,
+          );
+        }
       }
     }
-  }
 
-  return false;
+    return false;
+  });
 }
 
 export async function saveState(
