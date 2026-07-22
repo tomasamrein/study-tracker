@@ -11,7 +11,7 @@ export function BrandIcon({
   return (
     <div
       className={cn(
-        "flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-400 text-white shadow-md",
+        "flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-700 to-amber-500 text-white shadow-md",
         className,
       )}
     >

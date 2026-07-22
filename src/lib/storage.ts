@@ -1,4 +1,4 @@
-﻿import {
+import {
   doc,
   getDoc,
   setDoc,
@@ -18,6 +18,7 @@ export const storageBackend: "firebase" | "local" = isFirebaseConfigured
 
 export async function loadState(uid: string): Promise<AppState | null> {
   let firebaseData: AppState | null = null;
+  let syncAfterLoad: AppState | null = null;
 
   if (isFirebaseConfigured && uid !== "local") {
     const db = getDb();
@@ -31,10 +32,17 @@ export async function loadState(uid: string): Promise<AppState | null> {
 
           const legacySessions: StudySession[] = data.sessions ?? [];
           let sessions: StudySession[] = [];
+          const needsMigration =
+            !data.sessionIds && legacySessions.length > 0;
 
           if (data.sessionIds && data.sessionIds.length > 0) {
             try {
-              const col = collection(db, USERS_COLLECTION, uid, "sessions");
+              const col = collection(
+                db,
+                USERS_COLLECTION,
+                uid,
+                "sessions",
+              );
               const snap2 = await getDocs(col);
               const allSub = snap2.docs.map(
                 (d) => d.data() as StudySession,
@@ -55,6 +63,8 @@ export async function loadState(uid: string): Promise<AppState | null> {
 
           const { sessions: _, sessionIds: __, ...rest } = data;
           firebaseData = { ...rest, sessions } as AppState;
+
+          if (needsMigration) syncAfterLoad = firebaseData;
         }
       } catch (err) {
         console.error("[storage] Error leyendo de Firestore:", err);
@@ -72,14 +82,26 @@ export async function loadState(uid: string): Promise<AppState | null> {
       const missing = localData.sessions.filter((s) => !fbIds.has(s.id));
       if (missing.length > 0) {
         console.log(
-          `[storage] Merge: ${missing.length} sesion(es) recuperadas de localStorage`,
+          `[storage] Merge: ${missing.length} sesión(es) recuperadas de localStorage`,
         );
-        return {
+        const merged = {
           ...firebaseData,
           sessions: [...firebaseData.sessions, ...missing],
         };
+        syncAfterLoad = merged;
+        return merged;
       }
     }
+
+    if (syncAfterLoad) {
+      saveState(uid, syncAfterLoad).then((ok) => {
+        if (ok)
+          console.log(
+            "[storage] Sincronización en segundo plano completada",
+          );
+      });
+    }
+
     return firebaseData;
   }
 
