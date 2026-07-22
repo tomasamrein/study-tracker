@@ -1,15 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   addDays,
   format,
   isBefore,
+  isSameDay,
   parseISO,
   startOfDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { TodoItem } from "@/lib/types";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -21,74 +28,86 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const DAY_KEY = "yyyy-MM-dd";
+const WINDOW = 7;
 const NO_SUBJECT = "__none__";
-/** Cantidad de días futuros (incluido hoy) que se muestran siempre. */
-const WINDOW_DAYS = 7;
+const NO_FILTER = "__all__";
 
 export default function TodosPage() {
-  const { loaded, subjects, todos, addTodo, toggleTodo, deleteTodo, clearCompletedTodos } =
-    useStore();
+  const {
+    loaded,
+    subjects,
+    todos,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    updateTodo,
+    clearCompletedTodos,
+  } = useStore();
 
   const todayKey = format(new Date(), DAY_KEY);
   const [text, setText] = useState("");
   const [day, setDay] = useState(todayKey);
-  const [subjectId, setSubjectId] = useState<string>(NO_SUBJECT);
+  const [subjectId, setSubjectId] = useState(NO_SUBJECT);
+  const [filterSubject, setFilterSubject] = useState(NO_FILTER);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const subjectMap = useMemo(
     () => new Map(subjects.map((s) => [s.id, s])),
     [subjects],
   );
 
-  const activeSubjects = useMemo(() => {
-    const priority = ["cursando", "regular", "recursando"];
-    const active = subjects.filter((s) => priority.includes(s.state));
-    const rest = subjects
-      .filter((s) => !priority.includes(s.state))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return { active, rest };
-  }, [subjects]);
+  const days = useMemo(() => {
+    const base = startOfDay(new Date());
+    return Array.from({ length: WINDOW }, (_, i) => {
+      const d = addDays(base, i);
+      return { key: format(d, DAY_KEY), date: d };
+    });
+  }, []);
 
-  // Días a mostrar: ventana de hoy..hoy+6 más cualquier día con tareas
-  // (incluye días pasados con tareas pendientes/vencidas).
-  const groupedDays = useMemo(() => {
-    const keys = new Set<string>();
-    const today = startOfDay(new Date());
-    for (let i = 0; i < WINDOW_DAYS; i++) {
-      keys.add(format(addDays(today, i), DAY_KEY));
+  const filteredTodos = useMemo(() => {
+    let filtered = [...todos];
+    if (filterSubject !== NO_FILTER) {
+      filtered = filtered.filter((t) => t.subjectId === filterSubject);
     }
-    for (const t of todos) keys.add(t.day);
-
-    const byDay = new Map<string, TodoItem[]>();
-    for (const k of keys) byDay.set(k, []);
-    for (const t of todos) {
-      if (!byDay.has(t.day)) byDay.set(t.day, []);
-      byDay.get(t.day)!.push(t);
+    const grouped = new Map<string, TodoItem[]>();
+    for (const d of days) grouped.set(d.key, []);
+    for (const t of filtered) {
+      if (!grouped.has(t.day)) grouped.set(t.day, []);
+      grouped.get(t.day)!.push(t);
     }
-    return [...byDay.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, items]) => ({
-        key,
-        items: items.sort((a, b) => {
-          if (a.done !== b.done) return a.done ? 1 : -1;
-          return a.createdAt.localeCompare(b.createdAt);
-        }),
-      }));
-  }, [todos]);
+    for (const [k, items] of grouped) {
+      items.sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        return a.createdAt.localeCompare(b.createdAt);
+      });
+    }
+    return grouped;
+  }, [todos, filterSubject, days]);
 
-  if (!loaded) return <LoadingScreen />;
+  const startEdit = (todo: TodoItem) => {
+    setEditingId(todo.id);
+    setEditText(todo.text);
+  };
+
+  const commitEdit = () => {
+    if (editingId && editText.trim()) {
+      updateTodo(editingId, { text: editText.trim() });
+    }
+    setEditingId(null);
+    setEditText("");
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,74 +121,48 @@ export default function TodosPage() {
     setText("");
   };
 
+  if (!loaded) return <LoadingScreen />;
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tareas</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Tareas</h1>
         <p className="text-sm text-muted-foreground">
-          Organizá tus pendientes día por día y vas tachando lo que completás.
+          Organizá tus pendientes día por día.
         </p>
       </div>
 
-      {/* Alta de tarea */}
+      {/* Add form */}
       <Card>
-        <CardContent className="p-4">
-          <form
-            onSubmit={submit}
-            className="flex flex-col gap-3 md:flex-row md:items-end"
-          >
-            <div className="flex-1">
-              <Label className="mb-1.5 block text-xs text-muted-foreground">
-                Nueva tarea
-              </Label>
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Ej. Terminar TP de Análisis"
-              />
-            </div>
-            <div className="w-full md:w-40">
-              <Label className="mb-1.5 block text-xs text-muted-foreground">
-                Día
-              </Label>
-              <Input
-                type="date"
-                value={day}
-                onChange={(e) => setDay(e.target.value || todayKey)}
-              />
-            </div>
-            <div className="w-full md:w-52">
-              <Label className="mb-1.5 block text-xs text-muted-foreground">
-                Materia (opcional)
-              </Label>
-              <Select value={subjectId} onValueChange={setSubjectId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sin materia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_SUBJECT}>Sin materia</SelectItem>
-                  {activeSubjects.active.length > 0 && (
-                    <SelectGroup>
-                      <SelectLabel>En curso</SelectLabel>
-                      {activeSubjects.active.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  )}
-                  <SelectGroup>
-                    <SelectLabel>Todas</SelectLabel>
-                    {activeSubjects.rest.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" className="shrink-0">
+        <CardContent className="p-3">
+          <form onSubmit={submit} className="flex items-center gap-2">
+            <Input
+              ref={inputRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Nueva tarea…"
+              className="flex-1"
+            />
+            <Input
+              type="date"
+              value={day}
+              onChange={(e) => setDay(e.target.value || todayKey)}
+              className="w-36"
+            />
+            <Select value={subjectId} onValueChange={setSubjectId}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Materia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SUBJECT}>Sin materia</SelectItem>
+                {subjects.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="submit" size="sm">
               <Plus className="h-4 w-4" />
               Agregar
             </Button>
@@ -177,193 +170,238 @@ export default function TodosPage() {
         </CardContent>
       </Card>
 
-      {/* Columnas por día */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {groupedDays.map(({ key, items }) => (
-          <DayColumn
-            key={key}
-            dayKey={key}
-            todayKey={todayKey}
-            items={items}
-            subjectMap={subjectMap}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            onQuickAdd={(value) => addTodo({ text: value, day: key })}
-            onClearDone={() => clearCompletedTodos(key)}
-          />
-        ))}
+      {/* Filter */}
+      <div className="flex items-center gap-3">
+        <Select value={filterSubject} onValueChange={setFilterSubject}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por materia" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_FILTER}>Todas las materias</SelectItem>
+            {subjects.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          {todos.length} tarea{todos.length === 1 ? "" : "s"} en total
+          · {todos.filter((t) => t.done).length} completada
+          {todos.filter((t) => t.done).length === 1 ? "" : "s"}
+        </p>
       </div>
+
+      {/* Day tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {days.map((d) => {
+          const isToday = d.key === todayKey;
+          const active = d.key === day;
+          const dayTodos = filteredTodos.get(d.key) ?? [];
+          const pending = dayTodos.filter((t) => !t.done).length;
+          return (
+            <button
+              key={d.key}
+              onClick={() => setDay(d.key)}
+              className={cn(
+                "flex shrink-0 flex-col items-center gap-0.5 rounded-lg border px-4 py-2 text-xs transition-colors",
+                active
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted",
+                isToday && !active && "border-border",
+              )}
+            >
+              <span className="text-sm font-semibold">
+                {format(d.date, "EEE", { locale: es }).slice(0, 3)}
+              </span>
+              <span className="text-lg font-bold">{format(d.date, "d")}</span>
+              <span className="text-[10px]">
+                {isToday
+                  ? "Hoy"
+                  : format(d.date, "MMM", { locale: es }).slice(0, 3)}
+              </span>
+              {pending > 0 && (
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Day detail */}
+      <DayDetail
+        dayKey={day}
+        todayKey={todayKey}
+        items={filteredTodos.get(day) ?? []}
+        subjectMap={subjectMap}
+        editingId={editingId}
+        editText={editText}
+        onStartEdit={startEdit}
+        onEditChange={setEditText}
+        onCommitEdit={commitEdit}
+        onCancelEdit={() => setEditingId(null)}
+        onToggle={toggleTodo}
+        onDelete={deleteTodo}
+        onClearDone={() => clearCompletedTodos(day)}
+      />
     </div>
   );
 }
 
-function DayColumn({
+function DayDetail({
   dayKey,
   todayKey,
   items,
   subjectMap,
+  editingId,
+  editText,
+  onStartEdit,
+  onEditChange,
+  onCommitEdit,
+  onCancelEdit,
   onToggle,
   onDelete,
-  onQuickAdd,
   onClearDone,
 }: {
   dayKey: string;
   todayKey: string;
   items: TodoItem[];
   subjectMap: Map<string, { name: string }>;
+  editingId: string | null;
+  editText: string;
+  onStartEdit: (todo: TodoItem) => void;
+  onEditChange: (text: string) => void;
+  onCommitEdit: () => void;
+  onCancelEdit: () => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onQuickAdd: (text: string) => void;
   onClearDone: () => void;
 }) {
-  const [quick, setQuick] = useState("");
   const date = parseISO(dayKey);
   const isToday = dayKey === todayKey;
   const isPast = isBefore(date, startOfDay(parseISO(todayKey)));
   const done = items.filter((t) => t.done).length;
   const pending = items.length - done;
 
-  const dayName = format(date, "EEEE", { locale: es });
-  const dateLabel = format(date, "d 'de' MMM", { locale: es });
-
-  const quickAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    const value = quick.trim();
-    if (!value) return;
-    onQuickAdd(value);
-    setQuick("");
-  };
-
   return (
     <Card
       className={cn(
-        "flex flex-col",
-        isToday && "border-primary/50 ring-1 ring-primary/20",
+        isToday && "border-primary/30",
+        isPast && pending > 0 && "border-destructive/30",
       )}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="capitalize">{dayName}</span>
-            {isToday && (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                Hoy
-              </span>
-            )}
-            {isPast && pending > 0 && (
-              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:text-red-400">
-                Vencido
-              </span>
-            )}
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            {isToday ? "Hoy" : format(date, "EEEE", { locale: es })}
+            <span className="text-sm font-normal text-muted-foreground">
+              {format(date, "d MMM", { locale: es })}
+            </span>
           </CardTitle>
-          <span className="text-xs capitalize text-muted-foreground">
-            {dateLabel}
-          </span>
+          <p className="text-xs text-muted-foreground">
+            {items.length === 0
+              ? "Sin tareas"
+              : `${done}/${items.length} completada${done === 1 ? "" : "s"}`}
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {items.length === 0
-            ? "Sin tareas"
-            : `${pending} pendiente${pending === 1 ? "" : "s"} · ${done} hecha${done === 1 ? "" : "s"}`}
-        </p>
+        <div className="flex items-center gap-2">
+          {done > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground"
+              onClick={onClearDone}
+            >
+              Limpiar hechas
+            </Button>
+          )}
+        </div>
       </CardHeader>
 
-      <CardContent className="flex flex-1 flex-col gap-2">
-        <ul className="space-y-1.5">
-          {items.map((t) => (
-            <TodoRow
-              key={t.id}
-              todo={t}
-              subjectName={t.subjectId ? subjectMap.get(t.subjectId)?.name : undefined}
-              onToggle={() => onToggle(t.id)}
-              onDelete={() => onDelete(t.id)}
-            />
-          ))}
-        </ul>
+      <CardContent>
+        {items.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No hay tareas para este día.
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {items.map((t) => (
+              <li
+                key={t.id}
+                className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50"
+              >
+                <button
+                  type="button"
+                  onClick={() => onToggle(t.id)}
+                  aria-label={t.done ? "Pendiente" : "Completada"}
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                    t.done
+                      ? "border-emerald-500 bg-emerald-500 text-white"
+                      : "border-muted-foreground/40 hover:border-primary",
+                  )}
+                >
+                  {t.done && <Check className="h-3 w-3" />}
+                </button>
 
-        <form onSubmit={quickAdd} className="mt-auto flex items-center gap-2 pt-1">
-          <Input
-            value={quick}
-            onChange={(e) => setQuick(e.target.value)}
-            placeholder="Agregar tarea…"
-            className="h-8 text-sm"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 shrink-0"
-            aria-label="Agregar tarea"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </form>
+                <div className="min-w-0 flex-1">
+                  {editingId === t.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        onCommitEdit();
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Input
+                        value={editText}
+                        onChange={(e) => onEditChange(e.target.value)}
+                        onBlur={onCommitEdit}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") onCancelEdit();
+                        }}
+                        className="h-8 text-sm"
+                        autoFocus
+                      />
+                    </form>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onStartEdit(t)}
+                      className="block w-full text-left"
+                    >
+                      <p
+                        className={cn(
+                          "truncate text-sm",
+                          t.done && "text-muted-foreground line-through",
+                        )}
+                      >
+                        {t.text}
+                      </p>
+                    </button>
+                  )}
+                </div>
 
-        {done > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 self-start text-xs text-muted-foreground"
-            onClick={onClearDone}
-          >
-            <X className="h-3.5 w-3.5" />
-            Borrar completadas
-          </Button>
+                {t.subjectId && (
+                  <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    {subjectMap.get(t.subjectId)?.name ?? "?"}
+                  </span>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                  onClick={() => onDelete(t.id)}
+                  aria-label="Eliminar"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function TodoRow({
-  todo,
-  subjectName,
-  onToggle,
-  onDelete,
-}: {
-  todo: TodoItem;
-  subjectName?: string;
-  onToggle: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <li className="group flex items-center gap-2 rounded-md px-1 py-1 hover:bg-muted/50">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={todo.done ? "Marcar como pendiente" : "Marcar como hecha"}
-        className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border transition-colors",
-          todo.done
-            ? "border-emerald-500 bg-emerald-500 text-white"
-            : "border-muted-foreground/40 hover:border-primary",
-        )}
-      >
-        {todo.done && <Check className="h-3.5 w-3.5" />}
-      </button>
-      <div className="min-w-0 flex-1 leading-tight">
-        <p
-          className={cn(
-            "truncate text-sm",
-            todo.done && "text-muted-foreground line-through",
-          )}
-        >
-          {todo.text}
-        </p>
-        {subjectName && (
-          <p className="truncate text-[11px] text-muted-foreground">
-            {subjectName}
-          </p>
-        )}
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-        onClick={onDelete}
-        aria-label="Eliminar tarea"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
-    </li>
   );
 }

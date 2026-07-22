@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -39,84 +39,84 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.75);
+  --radius-3xl: calc(var(--radius) * 2.25);
+  --radius-4xl: calc(var(--radius) * 2.75);
 }
 
-/* ── Tema claro: blanco + azul ───────────────────────────────────── */
+/* ── Tema claro: Slate + Indigo ────────────────────────────────── */
 :root {
-  --background: oklch(0.99 0.004 260);
-  --foreground: oklch(0.18 0.03 265);
+  --background: oklch(0.97 0.005 260);
+  --foreground: oklch(0.14 0.02 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 265);
+  --card-foreground: oklch(0.14 0.02 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 265);
-  --primary: oklch(0.55 0.21 262);
+  --popover-foreground: oklch(0.14 0.02 260);
+  --primary: oklch(0.45 0.2 275);
   --primary-foreground: oklch(0.99 0.01 260);
-  --secondary: oklch(0.96 0.012 260);
-  --secondary-foreground: oklch(0.25 0.04 265);
-  --muted: oklch(0.96 0.012 260);
-  --muted-foreground: oklch(0.52 0.035 262);
-  --accent: oklch(0.95 0.03 255);
-  --accent-foreground: oklch(0.32 0.09 262);
-  --destructive: oklch(0.58 0.24 27);
-  --border: oklch(0.9 0.012 260);
-  --input: oklch(0.9 0.012 260);
-  --ring: oklch(0.55 0.21 262);
-  --chart-1: oklch(0.55 0.21 262);
-  --chart-2: oklch(0.62 0.15 220);
-  --chart-3: oklch(0.58 0.2 290);
-  --chart-4: oklch(0.65 0.16 180);
-  --chart-5: oklch(0.68 0.15 240);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.98 0.006 260);
-  --sidebar-foreground: oklch(0.18 0.03 265);
-  --sidebar-primary: oklch(0.55 0.21 262);
+  --secondary: oklch(0.93 0.01 260);
+  --secondary-foreground: oklch(0.24 0.03 260);
+  --muted: oklch(0.93 0.01 260);
+  --muted-foreground: oklch(0.52 0.04 260);
+  --accent: oklch(0.9 0.02 270);
+  --accent-foreground: oklch(0.3 0.06 275);
+  --destructive: oklch(0.58 0.22 22);
+  --border: oklch(0.87 0.01 260);
+  --input: oklch(0.87 0.01 260);
+  --ring: oklch(0.45 0.2 275);
+  --chart-1: oklch(0.5 0.2 275);
+  --chart-2: oklch(0.58 0.14 215);
+  --chart-3: oklch(0.55 0.18 295);
+  --chart-4: oklch(0.6 0.15 175);
+  --chart-5: oklch(0.62 0.14 240);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.95 0.005 260);
+  --sidebar-foreground: oklch(0.14 0.02 260);
+  --sidebar-primary: oklch(0.45 0.2 275);
   --sidebar-primary-foreground: oklch(0.99 0.01 260);
-  --sidebar-accent: oklch(0.95 0.03 255);
-  --sidebar-accent-foreground: oklch(0.32 0.09 262);
-  --sidebar-border: oklch(0.9 0.012 260);
-  --sidebar-ring: oklch(0.55 0.21 262);
+  --sidebar-accent: oklch(0.9 0.02 270);
+  --sidebar-accent-foreground: oklch(0.3 0.06 275);
+  --sidebar-border: oklch(0.87 0.01 260);
+  --sidebar-ring: oklch(0.45 0.2 275);
 }
 
-/* ── Tema oscuro: negro + azul (principal) ───────────────────────── */
+/* ── Tema oscuro: Slate + Indigo ───────────────────────────────── */
 .dark {
-  --background: oklch(0.14 0.018 265);
-  --foreground: oklch(0.98 0.008 260);
-  --card: oklch(0.178 0.024 265);
-  --card-foreground: oklch(0.98 0.008 260);
-  --popover: oklch(0.17 0.024 265);
-  --popover-foreground: oklch(0.98 0.008 260);
-  --primary: oklch(0.62 0.19 260);
-  --primary-foreground: oklch(0.98 0.01 260);
-  --secondary: oklch(0.24 0.03 265);
-  --secondary-foreground: oklch(0.98 0.008 260);
-  --muted: oklch(0.24 0.03 265);
-  --muted-foreground: oklch(0.71 0.035 262);
-  --accent: oklch(0.3 0.055 262);
-  --accent-foreground: oklch(0.98 0.008 260);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(0.7 0.08 262 / 14%);
-  --input: oklch(0.72 0.08 262 / 20%);
-  --ring: oklch(0.62 0.19 260);
-  --chart-1: oklch(0.64 0.19 260);
-  --chart-2: oklch(0.72 0.13 215);
-  --chart-3: oklch(0.66 0.19 292);
-  --chart-4: oklch(0.74 0.14 180);
-  --chart-5: oklch(0.76 0.13 245);
-  --sidebar: oklch(0.16 0.022 265);
-  --sidebar-foreground: oklch(0.98 0.008 260);
-  --sidebar-primary: oklch(0.62 0.19 260);
-  --sidebar-primary-foreground: oklch(0.98 0.01 260);
-  --sidebar-accent: oklch(0.28 0.05 262);
-  --sidebar-accent-foreground: oklch(0.98 0.008 260);
-  --sidebar-border: oklch(0.7 0.08 262 / 12%);
-  --sidebar-ring: oklch(0.62 0.19 260);
+  --background: oklch(0.12 0.015 260);
+  --foreground: oklch(0.97 0.005 260);
+  --card: oklch(0.16 0.015 260);
+  --card-foreground: oklch(0.97 0.005 260);
+  --popover: oklch(0.15 0.015 260);
+  --popover-foreground: oklch(0.97 0.005 260);
+  --primary: oklch(0.58 0.2 275);
+  --primary-foreground: oklch(0.99 0.01 260);
+  --secondary: oklch(0.22 0.02 260);
+  --secondary-foreground: oklch(0.97 0.005 260);
+  --muted: oklch(0.22 0.02 260);
+  --muted-foreground: oklch(0.65 0.03 260);
+  --accent: oklch(0.28 0.03 270);
+  --accent-foreground: oklch(0.97 0.005 260);
+  --destructive: oklch(0.68 0.18 22);
+  --border: oklch(0.65 0.03 260 / 12%);
+  --input: oklch(0.65 0.03 260 / 16%);
+  --ring: oklch(0.58 0.2 275);
+  --chart-1: oklch(0.6 0.2 275);
+  --chart-2: oklch(0.68 0.14 215);
+  --chart-3: oklch(0.64 0.18 295);
+  --chart-4: oklch(0.7 0.15 175);
+  --chart-5: oklch(0.72 0.14 240);
+  --sidebar: oklch(0.09 0.01 260);
+  --sidebar-foreground: oklch(0.92 0.01 260);
+  --sidebar-primary: oklch(0.58 0.2 275);
+  --sidebar-primary-foreground: oklch(0.99 0.01 260);
+  --sidebar-accent: oklch(0.2 0.02 260);
+  --sidebar-accent-foreground: oklch(0.92 0.01 260);
+  --sidebar-border: oklch(0.65 0.03 260 / 10%);
+  --sidebar-ring: oklch(0.58 0.2 275);
 }
 
 @layer base {
@@ -138,15 +138,5 @@
   h5 {
     @apply font-heading;
     letter-spacing: -0.015em;
-  }
-  /* Resplandor azul sutil en el tema oscuro para el look "negro + azul". */
-  .dark body {
-    background-image: radial-gradient(
-      55% 45% at 50% -8%,
-      oklch(0.62 0.19 260 / 0.14),
-      transparent 70%
-    );
-    background-repeat: no-repeat;
-    background-attachment: fixed;
   }
 }

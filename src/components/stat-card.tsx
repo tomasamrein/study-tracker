@@ -7,34 +7,25 @@ export function StatCard({
   label,
   value,
   hint,
-  accent = "text-primary",
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
   hint?: string;
-  accent?: string;
 }) {
   return (
-    <Card className="overflow-hidden transition-colors hover:border-primary/40">
-      <CardContent className="flex items-start gap-3 p-4">
-        <div
-          className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-current/10 ring-1 ring-current/15",
-            accent,
-          )}
-        >
-          <Icon className="h-5 w-5" />
+    <Card className="border-muted/50">
+      <CardContent className="flex items-center gap-3 p-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {label}
-          </p>
-          <p className="font-heading text-2xl font-semibold leading-tight tabular-nums">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-xl font-semibold leading-tight tabular-nums">
             {value}
           </p>
           {hint && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+            <p className="text-xs text-muted-foreground">{hint}</p>
           )}
         </div>
       </CardContent>
