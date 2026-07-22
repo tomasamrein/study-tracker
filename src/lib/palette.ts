@@ -1,17 +1,14 @@
-// Paleta para gráficos circulares (horas por materia).
-// Prioriza la familia azul/cian/violeta para combinar con el tema negro + azul,
-// dejando los tonos cálidos para las materias con menos horas.
 export const CHART_PALETTE = [
-  "#3b82f6", // blue
-  "#06b6d4", // cyan
-  "#8b5cf6", // violet
-  "#22d3ee", // sky cyan
-  "#6366f1", // indigo
+  "#22c55e", // green
   "#14b8a6", // teal
-  "#a855f7", // purple
-  "#0ea5e9", // sky
-  "#ec4899", // pink
   "#10b981", // emerald
-  "#f59e0b", // amber
-  "#f97316", // orange
+  "#34d399", // light green
+  "#06b6d4", // cyan
+  "#2dd4bf", // light teal
+  "#4ade80", // lighter green
+  "#5eead4", // mint
+  "#a7f3d0", // very light green
+  "#6ee7b7", // soft emerald
+  "#67e8f9", // sky
+  "#86efac", // soft green
 ];
