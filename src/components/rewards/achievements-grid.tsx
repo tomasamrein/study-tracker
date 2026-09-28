@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import { Trophy } from "lucide-react";
-import { useStore } from "@/lib/store";
-import { computeAchievements } from "@/lib/achievements";
+import { useAchievements } from "@/lib/use-achievements";
 import {
   Card,
   CardContent,
@@ -14,12 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function AchievementsGrid() {
-  const { sessions, dailyGoalMinutes } = useStore();
-
-  const achievements = useMemo(
-    () => computeAchievements({ sessions, dailyGoalMinutes }),
-    [sessions, dailyGoalMinutes],
-  );
+  const achievements = useAchievements();
   const unlocked = achievements.filter((a) => a.unlocked).length;
 
   return (
@@ -28,12 +21,12 @@ export function AchievementsGrid() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4 text-amber-500" />
+              <Trophy className="h-4 w-4 text-foreground" />
               Logros
             </CardTitle>
             <CardDescription>Recompensas por tu constancia</CardDescription>
           </div>
-          <span className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary tabular-nums">
+          <span className="rounded-full border px-3 py-1 font-mono text-xs tabular-nums">
             {unlocked}/{achievements.length}
           </span>
         </div>
@@ -44,14 +37,14 @@ export function AchievementsGrid() {
             <div
               key={a.id}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all",
+                "flex flex-col items-center gap-1 rounded-lg border p-3 text-center transition-all",
                 a.unlocked
-                  ? "border-primary/30 bg-primary/5"
-                  : "border-dashed opacity-55 grayscale",
+                  ? "border-foreground/30"
+                  : "border-dashed opacity-40",
               )}
               title={a.description}
             >
-              <span className="text-3xl leading-none">{a.emoji}</span>
+              <span className="text-2xl leading-none grayscale">{a.emoji}</span>
               <span className="mt-1 text-xs font-semibold leading-tight">
                 {a.title}
               </span>

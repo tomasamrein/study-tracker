@@ -5,14 +5,88 @@ import {
   endOfWeek,
   format,
   parseISO,
+  endOfQuarter,
   startOfMonth,
+  startOfQuarter,
   startOfWeek,
   subDays,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import type { StudySession, Subject } from "./types";
+import type { FocusArea, GoalHorizon, StudySession, Subject } from "./types";
 
 const DAY_KEY = "yyyy-MM-dd";
+
+export function dayKey(d: Date = new Date()): string {
+  return format(d, DAY_KEY);
+}
+
+/** Área de una sesión (las sesiones previas a v2 eran de la carrera). */
+export function areaOf(s: StudySession): string {
+  return s.areaId ?? "carrera";
+}
+
+/** Filtra sesiones por área; `null`/"all" devuelve todas. */
+export function sessionsInArea(
+  sessions: StudySession[],
+  areaId: string | null | undefined,
+): StudySession[] {
+  if (!areaId || areaId === "all") return sessions;
+  return sessions.filter((s) => areaOf(s) === areaId);
+}
+
+export interface AreaMinutes {
+  areaId: string;
+  name: string;
+  minutes: number;
+}
+
+export function minutesByArea(
+  sessions: StudySession[],
+  areas: FocusArea[],
+): AreaMinutes[] {
+  const byId = new Map<string, number>();
+  for (const s of sessions) {
+    byId.set(areaOf(s), (byId.get(areaOf(s)) ?? 0) + s.minutes);
+  }
+  const names = new Map(areas.map((a) => [a.id, a.name]));
+  const ids = new Set([...areas.map((a) => a.id), ...byId.keys()]);
+  return [...ids]
+    .map((areaId) => ({
+      areaId,
+      name: names.get(areaId) ?? "Área eliminada",
+      minutes: byId.get(areaId) ?? 0,
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
+}
+
+/** Rango [inicio, fin] del período actual de una meta. */
+export function horizonRange(
+  horizon: GoalHorizon,
+  now: Date = new Date(),
+): { start: Date; end: Date } {
+  if (horizon === "semana")
+    return {
+      start: startOfWeek(now, { weekStartsOn: 1 }),
+      end: endOfWeek(now, { weekStartsOn: 1 }),
+    };
+  if (horizon === "mes") return { start: startOfMonth(now), end: endOfMonth(now) };
+  return { start: startOfQuarter(now), end: endOfQuarter(now) };
+}
+
+/** Minutos de enfoque dentro de un rango, opcionalmente filtrado por área. */
+export function minutesInRange(
+  sessions: StudySession[],
+  start: Date,
+  end: Date,
+  areaId?: string | null,
+): number {
+  const a = start.getTime();
+  const b = end.getTime();
+  return sessionsInArea(sessions, areaId).reduce((acc, s) => {
+    const t = parseISO(s.startedAt).getTime();
+    return t >= a && t <= b ? acc + s.minutes : acc;
+  }, 0);
+}
 
 export function formatMinutes(min: number): string {
   const m = Math.round(min);
@@ -61,6 +135,7 @@ export function minutesBySubject(
 ): SubjectHours[] {
   const byId = new Map<string, number>();
   for (const s of sessions) {
+    if (!s.subjectId) continue;
     byId.set(s.subjectId, (byId.get(s.subjectId) ?? 0) + s.minutes);
   }
   const subjectMap = new Map(subjects.map((s) => [s.id, s]));

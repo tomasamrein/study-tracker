@@ -1,6 +1,7 @@
 import { format, getHours, parseISO } from "date-fns";
-import { computeStreak, totalMinutes } from "./stats";
-import type { StudySession } from "./types";
+import { areaOf, computeStreak, totalMinutes } from "./stats";
+import { bestClean } from "./habits";
+import type { StudySession, Vice } from "./types";
 
 export interface Achievement {
   id: string;
@@ -16,6 +17,8 @@ export interface AchievementStatus extends Achievement {
 interface Input {
   sessions: StudySession[];
   dailyGoalMinutes: number;
+  vices?: Vice[];
+  goalsDone?: number;
   now?: Date;
 }
 
@@ -24,28 +27,28 @@ const DEFS: (Achievement & { test: (m: Metrics) => boolean })[] = [
   {
     id: "first-session",
     title: "Primer paso",
-    description: "Registrá tu primera sesión de estudio",
+    description: "Completá tu primer foco",
     emoji: "🌱",
     test: (m) => m.sessionCount >= 1,
   },
   {
     id: "goal-met",
     title: "Meta cumplida",
-    description: "Alcanzá tu meta diaria de horas",
+    description: "Alcanzá tu meta diaria de enfoque",
     emoji: "🎯",
     test: (m) => m.dailyGoalMinutes > 0 && m.maxDayMinutes >= m.dailyGoalMinutes,
   },
   {
     id: "focus-2h",
     title: "En ritmo",
-    description: "Estudiá 2 horas en un mismo día",
+    description: "2 horas de enfoque en un mismo día",
     emoji: "⏱️",
     test: (m) => m.maxDayMinutes >= 120,
   },
   {
     id: "marathon",
     title: "Maratón",
-    description: "Estudiá 4 horas en un mismo día",
+    description: "4 horas de enfoque en un mismo día",
     emoji: "🔥",
     test: (m) => m.maxDayMinutes >= 240,
   },
@@ -73,21 +76,21 @@ const DEFS: (Achievement & { test: (m: Metrics) => boolean })[] = [
   {
     id: "total-10h",
     title: "Diez horas",
-    description: "Acumulá 10 horas de estudio",
+    description: "Acumulá 10 horas de enfoque",
     emoji: "⭐",
     test: (m) => m.totalMin >= 600,
   },
   {
     id: "total-50h",
     title: "Cincuenta horas",
-    description: "Acumulá 50 horas de estudio",
+    description: "Acumulá 50 horas de enfoque",
     emoji: "🌟",
     test: (m) => m.totalMin >= 3000,
   },
   {
     id: "total-100h",
     title: "Centenario",
-    description: "Acumulá 100 horas de estudio",
+    description: "Acumulá 100 horas de enfoque",
     emoji: "💯",
     test: (m) => m.totalMin >= 6000,
   },
@@ -99,16 +102,44 @@ const DEFS: (Achievement & { test: (m: Metrics) => boolean })[] = [
     test: (m) => m.distinctSubjects >= 5,
   },
   {
+    id: "agencia-10h",
+    title: "Constructor",
+    description: "Acumulá 10 horas de enfoque en la agencia",
+    emoji: "🛠️",
+    test: (m) => m.agencyMin >= 600,
+  },
+  {
+    id: "clean-7",
+    title: "Detox",
+    description: "7 días limpio de una fuente de dopamina barata",
+    emoji: "🧘",
+    test: (m) => m.bestClean >= 7,
+  },
+  {
+    id: "clean-30",
+    title: "Mente clara",
+    description: "30 días limpio de una fuente de dopamina barata",
+    emoji: "🧠",
+    test: (m) => m.bestClean >= 30,
+  },
+  {
+    id: "goals-3",
+    title: "Cumplidor",
+    description: "Cumplí 3 metas",
+    emoji: "🎯",
+    test: (m) => m.goalsDone >= 3,
+  },
+  {
     id: "early-bird",
     title: "Madrugador",
-    description: "Estudiá antes de las 7 de la mañana",
+    description: "Enfocate antes de las 7 de la mañana",
     emoji: "🌅",
     test: (m) => m.earlyBird,
   },
   {
     id: "night-owl",
     title: "Búho nocturno",
-    description: "Estudiá entre la medianoche y las 5 AM",
+    description: "Enfocate entre la medianoche y las 5 AM",
     emoji: "🦉",
     test: (m) => m.nightOwl,
   },
@@ -123,9 +154,12 @@ interface Metrics {
   earlyBird: boolean;
   nightOwl: boolean;
   dailyGoalMinutes: number;
+  agencyMin: number;
+  bestClean: number;
+  goalsDone: number;
 }
 
-function metrics({ sessions, dailyGoalMinutes, now }: Input): Metrics {
+function metrics({ sessions, dailyGoalMinutes, vices = [], goalsDone = 0, now }: Input): Metrics {
   const byDay = new Map<string, number>();
   let earlyBird = false;
   let nightOwl = false;
@@ -142,10 +176,13 @@ function metrics({ sessions, dailyGoalMinutes, now }: Input): Metrics {
     totalMin: totalMinutes(sessions),
     maxDayMinutes: byDay.size ? Math.max(...byDay.values()) : 0,
     longestStreak: computeStreak(sessions, now).longest,
-    distinctSubjects: new Set(sessions.map((s) => s.subjectId)).size,
+    distinctSubjects: new Set(sessions.map((s) => s.subjectId).filter(Boolean)).size,
     earlyBird,
     nightOwl,
     dailyGoalMinutes,
+    agencyMin: totalMinutes(sessions.filter((s) => areaOf(s) === "agencia")),
+    bestClean: vices.reduce((acc, v) => Math.max(acc, bestClean(v, now)), 0),
+    goalsDone,
   };
 }
 

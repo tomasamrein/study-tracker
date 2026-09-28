@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { BrandIcon } from "@/components/brand-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -47,17 +48,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardContent className="flex flex-col items-center gap-5 p-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-            <GraduationCap className="h-7 w-7" />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-xl font-bold">Study Tracker</h1>
+          <BrandIcon className="h-12 w-12 rounded-xl" iconClassName="h-6 w-6" />
+          <div className="space-y-2">
+            <h1 className="display text-5xl">Foco</h1>
             <p className="text-sm text-muted-foreground">
-              Iniciá sesión para acceder a tus horas de estudio, rachas y plan de
-              carrera sincronizados.
+              Iniciá sesión para sincronizar tu enfoque, metas, hábitos y rachas.
             </p>
           </div>
           <Button

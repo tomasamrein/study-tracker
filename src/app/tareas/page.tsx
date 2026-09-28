@@ -5,21 +5,15 @@ import {
   addDays,
   format,
   isBefore,
-  isSameDay,
   parseISO,
   startOfDay,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Check, Plus, Star, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import type { TodoItem } from "@/lib/types";
 import { LoadingScreen } from "@/components/loading-screen";
+import { Spark } from "@/components/spark";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,12 +34,14 @@ import { cn } from "@/lib/utils";
 const DAY_KEY = "yyyy-MM-dd";
 const WINDOW = 7;
 const NO_SUBJECT = "__none__";
+const NO_AREA = "__none__";
 const NO_FILTER = "__all__";
 
 export default function TodosPage() {
   const {
     loaded,
     subjects,
+    areas,
     todos,
     addTodo,
     toggleTodo,
@@ -58,7 +54,8 @@ export default function TodosPage() {
   const [text, setText] = useState("");
   const [day, setDay] = useState(todayKey);
   const [subjectId, setSubjectId] = useState(NO_SUBJECT);
-  const [filterSubject, setFilterSubject] = useState(NO_FILTER);
+  const [areaId, setAreaId] = useState(NO_AREA);
+  const [filterArea, setFilterArea] = useState(NO_FILTER);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +64,7 @@ export default function TodosPage() {
     () => new Map(subjects.map((s) => [s.id, s])),
     [subjects],
   );
+  const areaMap = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas]);
 
   const days = useMemo(() => {
     const base = startOfDay(new Date());
@@ -78,8 +76,8 @@ export default function TodosPage() {
 
   const filteredTodos = useMemo(() => {
     let filtered = [...todos];
-    if (filterSubject !== NO_FILTER) {
-      filtered = filtered.filter((t) => t.subjectId === filterSubject);
+    if (filterArea !== NO_FILTER) {
+      filtered = filtered.filter((t) => t.areaId === filterArea);
     }
     const grouped = new Map<string, TodoItem[]>();
     for (const d of days) grouped.set(d.key, []);
@@ -87,14 +85,15 @@ export default function TodosPage() {
       if (!grouped.has(t.day)) grouped.set(t.day, []);
       grouped.get(t.day)!.push(t);
     }
-    for (const [k, items] of grouped) {
+    for (const items of grouped.values()) {
       items.sort((a, b) => {
         if (a.done !== b.done) return a.done ? 1 : -1;
+        if (!!a.priority !== !!b.priority) return a.priority ? -1 : 1;
         return a.createdAt.localeCompare(b.createdAt);
       });
     }
     return grouped;
-  }, [todos, filterSubject, days]);
+  }, [todos, filterArea, days]);
 
   const startEdit = (todo: TodoItem) => {
     setEditingId(todo.id);
@@ -116,7 +115,8 @@ export default function TodosPage() {
     addTodo({
       text: value,
       day,
-      subjectId: subjectId === NO_SUBJECT ? null : subjectId,
+      areaId: areaId === NO_AREA ? null : areaId,
+      subjectId: areaId === "carrera" && subjectId !== NO_SUBJECT ? subjectId : null,
     });
     setText("");
   };
@@ -124,24 +124,25 @@ export default function TodosPage() {
   if (!loaded) return <LoadingScreen />;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Tareas</h1>
-        <p className="text-sm text-muted-foreground">
-          Organizá tus pendientes día por día.
+    <div className="mx-auto max-w-4xl space-y-8">
+      <header className="space-y-2">
+        <p className="eyebrow">Tareas</p>
+        <h1 className="display text-5xl md:text-6xl">Menos lista, más hecho.</h1>
+        <p className="max-w-xl text-muted-foreground">
+          Organizá tus pendientes día por día. Marcá con ★ tus 3 prioridades.
         </p>
-      </div>
+      </header>
 
       {/* Add form */}
       <Card>
         <CardContent className="p-3">
-          <form onSubmit={submit} className="flex items-center gap-2">
+          <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
             <Input
               ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Nueva tarea…"
-              className="flex-1"
+              className="min-w-48 flex-1"
             />
             <Input
               type="date"
@@ -149,19 +150,34 @@ export default function TodosPage() {
               onChange={(e) => setDay(e.target.value || todayKey)}
               className="w-36"
             />
-            <Select value={subjectId} onValueChange={setSubjectId}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Materia" />
+            <Select value={areaId} onValueChange={setAreaId}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Área" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_SUBJECT}>Sin materia</SelectItem>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
+                <SelectItem value={NO_AREA}>Sin área</SelectItem>
+                {areas.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {areaId === "carrera" && (
+              <Select value={subjectId} onValueChange={setSubjectId}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_SUBJECT}>Sin materia</SelectItem>
+                  {subjects.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button type="submit" size="sm">
               <Plus className="h-4 w-4" />
               Agregar
@@ -172,15 +188,15 @@ export default function TodosPage() {
 
       {/* Filter */}
       <div className="flex items-center gap-3">
-        <Select value={filterSubject} onValueChange={setFilterSubject}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por materia" />
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Filtrar por área" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NO_FILTER}>Todas las materias</SelectItem>
-            {subjects.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
+            <SelectItem value={NO_FILTER}>Todas las áreas</SelectItem>
+            {areas.map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -206,7 +222,7 @@ export default function TodosPage() {
               className={cn(
                 "flex shrink-0 flex-col items-center gap-0.5 rounded-lg border px-4 py-2 text-xs transition-colors",
                 active
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-foreground bg-foreground text-background"
                   : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted",
                 isToday && !active && "border-border",
               )}
@@ -214,14 +230,14 @@ export default function TodosPage() {
               <span className="text-sm font-semibold">
                 {format(d.date, "EEE", { locale: es }).slice(0, 3)}
               </span>
-              <span className="text-lg font-bold">{format(d.date, "d")}</span>
+              <span className="display text-2xl">{format(d.date, "d")}</span>
               <span className="text-[10px]">
                 {isToday
                   ? "Hoy"
                   : format(d.date, "MMM", { locale: es }).slice(0, 3)}
               </span>
               {pending > 0 && (
-                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                <span className="mt-0.5 h-1 w-1 rounded-full bg-current" />
               )}
             </button>
           );
@@ -234,6 +250,8 @@ export default function TodosPage() {
         todayKey={todayKey}
         items={filteredTodos.get(day) ?? []}
         subjectMap={subjectMap}
+        areaMap={areaMap}
+        onTogglePriority={(t) => updateTodo(t.id, { priority: !t.priority })}
         editingId={editingId}
         editText={editText}
         onStartEdit={startEdit}
@@ -253,6 +271,8 @@ function DayDetail({
   todayKey,
   items,
   subjectMap,
+  areaMap,
+  onTogglePriority,
   editingId,
   editText,
   onStartEdit,
@@ -267,6 +287,8 @@ function DayDetail({
   todayKey: string;
   items: TodoItem[];
   subjectMap: Map<string, { name: string }>;
+  areaMap: Map<string, { name: string }>;
+  onTogglePriority: (todo: TodoItem) => void;
   editingId: string | null;
   editText: string;
   onStartEdit: (todo: TodoItem) => void;
@@ -286,8 +308,7 @@ function DayDetail({
   return (
     <Card
       className={cn(
-        isToday && "border-primary/30",
-        isPast && pending > 0 && "border-destructive/30",
+        isPast && pending > 0 && "ring-foreground/25 ring-dashed",
       )}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -324,6 +345,7 @@ function DayDetail({
             No hay tareas para este día.
           </p>
         ) : (
+          <Spark>
           <ul className="space-y-1">
             {items.map((t) => (
               <li
@@ -337,8 +359,8 @@ function DayDetail({
                   className={cn(
                     "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
                     t.done
-                      ? "border-emerald-500 bg-emerald-500 text-white"
-                      : "border-muted-foreground/40 hover:border-primary",
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-foreground/30 hover:border-foreground",
                   )}
                 >
                   {t.done && <Check className="h-3 w-3" />}
@@ -382,16 +404,31 @@ function DayDetail({
                   )}
                 </div>
 
-                {t.subjectId && (
-                  <span className="shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    {subjectMap.get(t.subjectId)?.name ?? "?"}
+                {(t.subjectId || t.areaId) && (
+                  <span className="hidden max-w-40 shrink-0 truncate rounded-md border px-2 py-0.5 text-[10px] text-muted-foreground sm:inline">
+                    {t.subjectId
+                      ? subjectMap.get(t.subjectId)?.name ?? "?"
+                      : areaMap.get(t.areaId ?? "")?.name ?? "?"}
                   </span>
                 )}
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                  className={cn(
+                    "h-7 w-7 shrink-0",
+                    t.priority ? "text-foreground" : "text-muted-foreground/50 hover:text-foreground",
+                  )}
+                  onClick={() => onTogglePriority(t)}
+                  aria-label={t.priority ? "Quitar de prioridades" : "Marcar como prioridad"}
+                >
+                  <Star className={cn("h-3.5 w-3.5", t.priority && "fill-current")} />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground transition-opacity sm:opacity-0 sm:group-hover:opacity-100 hover:text-foreground"
                   onClick={() => onDelete(t.id)}
                   aria-label="Eliminar"
                 >
@@ -400,6 +437,7 @@ function DayDetail({
               </li>
             ))}
           </ul>
+          </Spark>
         )}
       </CardContent>
     </Card>

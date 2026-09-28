@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 export function StatCard({
   icon: Icon,
@@ -10,24 +9,18 @@ export function StatCard({
 }: {
   icon: LucideIcon;
   label: string;
-  value: string;
+  value: React.ReactNode;
   hint?: string;
 }) {
   return (
-    <Card className="border-muted/50">
-      <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
+    <Card>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">{label}</p>
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-xl font-semibold leading-tight tabular-nums">
-            {value}
-          </p>
-          {hint && (
-            <p className="text-xs text-muted-foreground">{hint}</p>
-          )}
-        </div>
+        <p className="display text-4xl tabular-nums">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </CardContent>
     </Card>
   );

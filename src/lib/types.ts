@@ -1,4 +1,4 @@
-// Tipos centrales de Study Tracker
+// Tipos centrales de Foco — tracker de éxito personal
 
 export type SubjectState =
   | "pendiente"
@@ -34,9 +34,33 @@ export interface Subject {
   custom?: boolean;
 }
 
+/** Área de enfoque: a qué dedicás el tiempo (carrera, agencia, etc.). */
+export interface FocusArea {
+  id: string;
+  name: string;
+  kind: "carrera" | "agencia" | "custom";
+  /** Descripción corta opcional (ej. "Axtar Studio"). */
+  hint?: string;
+}
+
+export const DEFAULT_AREAS: FocusArea[] = [
+  { id: "carrera", name: "Carrera", kind: "carrera", hint: "Materias de la facultad" },
+  { id: "agencia", name: "Agencia", kind: "agencia", hint: "Sistemas, clientes y proyectos" },
+];
+
+/** Sesión de enfoque (antes: sesión de estudio). */
 export interface StudySession {
   id: string;
-  subjectId: string;
+  /** Área a la que se imputa el tiempo. Sesiones viejas → "carrera". */
+  areaId?: string;
+  /** Materia (sólo para el área carrera). */
+  subjectId?: string | null;
+  /** Proyecto / cliente / tema libre (ej. para la agencia). */
+  label?: string;
+  /** Método de estudio usado durante el foco. */
+  methodId?: string;
+  /** Autoevaluación de la calidad del foco (1–5). */
+  quality?: number;
   /** ISO date-time de inicio de la sesión. */
   startedAt: string;
   /** Minutos efectivos de estudio (sólo foco, sin descansos). */
@@ -54,8 +78,58 @@ export interface TodoItem {
   day: string;
   /** Materia opcional asociada a la tarea. */
   subjectId?: string | null;
+  /** Área opcional asociada a la tarea. */
+  areaId?: string | null;
+  /** true si es una de las 3 prioridades del día. */
+  priority?: boolean;
   /** ISO date-time de creación, para ordenar dentro del día. */
   createdAt: string;
+}
+
+export type GoalHorizon = "semana" | "mes" | "trimestre";
+export type GoalMetric = "check" | "minutes" | "count";
+
+export interface Goal {
+  id: string;
+  title: string;
+  /** Área asociada; para metas de minutos, "all" o null suma todas. */
+  areaId?: string | null;
+  horizon: GoalHorizon;
+  metric: GoalMetric;
+  /** Objetivo numérico (minutos o cantidad). */
+  target?: number | null;
+  /** Progreso manual para metas de cantidad. */
+  progress?: number;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface Habit {
+  id: string;
+  name: string;
+  /** build: hábito a construir · avoid: algo que evitás (detox). */
+  kind: "build" | "avoid";
+  createdAt: string;
+  archived?: boolean;
+}
+
+/** Contador de días limpio de una fuente de dopamina barata. */
+export interface Vice {
+  id: string;
+  name: string;
+  /** ISO date-time desde el que estás limpio. */
+  since: string;
+  /** Historial de recaídas (ISO date-time). */
+  relapses: string[];
+  /** Mejor racha limpia histórica en días. */
+  best: number;
+}
+
+export interface DailyEntry {
+  intention?: string;
+  reviewNote?: string;
+  /** Puntaje del día (1–5). */
+  score?: number;
 }
 
 export interface PomodoroSettings {
@@ -96,6 +170,14 @@ export interface AppState {
   customPlan?: boolean;
   /** Metadatos del plan cargado por el usuario; null usa el plan por defecto. */
   planMeta?: PlanMeta | null;
+  areas: FocusArea[];
+  goals: Goal[];
+  habits: Habit[];
+  /** Día (yyyy-mm-dd) → ids de hábitos cumplidos ese día. */
+  habitLog: Record<string, string[]>;
+  vices: Vice[];
+  /** Día (yyyy-mm-dd) → intención / cierre del día. */
+  daily: Record<string, DailyEntry>;
   /** Versión del esquema de datos, por si hay migraciones futuras. */
   version: number;
 }
@@ -116,7 +198,7 @@ export interface StateMeta {
   label: string;
   /** Clase de color para badges (tailwind). */
   badge: string;
-  /** Color hex para gráficos/leyendas. */
+  /** Color CSS (monocromo) para gráficos/leyendas. */
   color: string;
   /** Cuenta como materia "terminada" (aprobada de algún modo). */
   done: boolean;
@@ -125,48 +207,44 @@ export interface StateMeta {
 export const STATE_META: Record<SubjectState, StateMeta> = {
   pendiente: {
     label: "Pendiente",
-    badge: "bg-muted text-muted-foreground border-border",
-    color: "#94a3b8",
+    badge: "border-border text-muted-foreground",
+    color: "color-mix(in oklch, var(--foreground) 12%, transparent)",
     done: false,
   },
   cursando: {
     label: "En curso",
-    badge: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
-    color: "#3b82f6",
+    badge: "border-foreground/40 text-foreground",
+    color: "color-mix(in oklch, var(--foreground) 55%, transparent)",
     done: false,
   },
   regular: {
     label: "Regular (falta final)",
-    badge:
-      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    color: "#f59e0b",
+    badge: "border-foreground/40 border-dashed text-foreground",
+    color: "color-mix(in oklch, var(--foreground) 35%, transparent)",
     done: false,
   },
   aprobada: {
     label: "Aprobada",
-    badge:
-      "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    color: "#10b981",
+    badge: "border-foreground bg-foreground text-background",
+    color: "var(--foreground)",
     done: true,
   },
   promocionada: {
     label: "Promocionada",
-    badge:
-      "bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30",
-    color: "#8b5cf6",
+    badge: "border-foreground bg-foreground text-background",
+    color: "color-mix(in oklch, var(--foreground) 80%, transparent)",
     done: true,
   },
   recursando: {
     label: "Recursando",
-    badge: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
-    color: "#ef4444",
+    badge: "border-foreground/30 text-muted-foreground line-through decoration-1",
+    color: "color-mix(in oklch, var(--foreground) 22%, transparent)",
     done: false,
   },
   libre: {
     label: "Libre",
-    badge:
-      "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
-    color: "#f97316",
+    badge: "border-border border-dashed text-muted-foreground",
+    color: "color-mix(in oklch, var(--foreground) 18%, transparent)",
     done: false,
   },
 };

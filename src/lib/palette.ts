@@ -1,14 +1,13 @@
+// Paleta monocroma para gráficos: grises que funcionan en tema claro y oscuro.
 export const CHART_PALETTE = [
-  "#22c55e", // green
-  "#14b8a6", // teal
-  "#10b981", // emerald
-  "#34d399", // light green
-  "#06b6d4", // cyan
-  "#2dd4bf", // light teal
-  "#4ade80", // lighter green
-  "#5eead4", // mint
-  "#a7f3d0", // very light green
-  "#6ee7b7", // soft emerald
-  "#67e8f9", // sky
-  "#86efac", // soft green
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "color-mix(in oklch, var(--chart-1) 70%, transparent)",
+  "color-mix(in oklch, var(--chart-2) 70%, transparent)",
+  "color-mix(in oklch, var(--chart-3) 70%, transparent)",
+  "color-mix(in oklch, var(--chart-4) 70%, transparent)",
+  "color-mix(in oklch, var(--chart-5) 70%, transparent)",
 ];

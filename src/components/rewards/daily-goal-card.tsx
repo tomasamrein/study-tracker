@@ -54,15 +54,15 @@ export function DailyGoalCard() {
               r={R}
               fill="none"
               stroke="var(--muted)"
-              strokeWidth="11"
+              strokeWidth="3"
             />
             <circle
               cx="64"
               cy="64"
               r={R}
               fill="none"
-              stroke={reached ? "#10b981" : "var(--primary)"}
-              strokeWidth="11"
+              stroke="var(--foreground)"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={C}
               strokeDashoffset={C * (1 - pct / 100)}
@@ -72,9 +72,9 @@ export function DailyGoalCard() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {reached ? (
-              <Trophy className="h-7 w-7 text-emerald-500" />
+              <Trophy className="h-7 w-7" strokeWidth={1.5} />
             ) : (
-              <span className="font-heading text-2xl font-bold tabular-nums">
+              <span className="display text-3xl tabular-nums">
                 {pct}%
               </span>
             )}
@@ -87,8 +87,8 @@ export function DailyGoalCard() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <Target className="h-4 w-4 text-primary" />
-              <h3 className="font-heading text-base font-semibold">Meta diaria</h3>
+              <Target className="h-4 w-4" strokeWidth={1.75} />
+              <h3 className="text-base font-medium">Meta diaria</h3>
             </div>
             <Button variant="ghost" size="sm" onClick={openEdit}>
               <Pencil className="h-3.5 w-3.5" />
@@ -104,14 +104,14 @@ export function DailyGoalCard() {
           </p>
 
           {reached ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 px-2.5 py-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm">
               <Check className="h-4 w-4" />
-              ¡Meta cumplida! Crack 🎉
+              Meta cumplida
             </p>
           ) : (
             <p className="mt-2 text-sm">
               Te faltan{" "}
-              <span className="font-semibold text-primary">
+              <span className="font-medium">
                 {formatMinutes(remaining)}
               </span>{" "}
               para lograrla.
@@ -125,13 +125,13 @@ export function DailyGoalCard() {
           <DialogHeader>
             <DialogTitle>Tu meta diaria</DialogTitle>
             <DialogDescription>
-              ¿Cuántas horas querés estudiar por día?
+              ¿Cuántas horas de enfoque profundo querés por día (todas las áreas)?
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
             <div className="text-center">
-              <span className="font-heading text-4xl font-bold tabular-nums">
+              <span className="display text-6xl tabular-nums">
                 {formatHours(draft)}
               </span>
               <span className="ml-1 text-lg text-muted-foreground">horas</span>

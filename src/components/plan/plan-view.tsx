@@ -39,7 +39,7 @@ const CATEGORY_ORDER: SubjectCategory[] = [
   "electiva",
 ];
 
-export default function PlanPage() {
+export function PlanView() {
   const { loaded, subjects, sessions, planMeta } = useStore();
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState<SubjectState | "all">("all");
@@ -50,7 +50,8 @@ export default function PlanPage() {
   const minutesById = useMemo(() => {
     const map = new Map<string, number>();
     for (const s of sessions)
-      map.set(s.subjectId, (map.get(s.subjectId) ?? 0) + s.minutes);
+      if (s.subjectId)
+        map.set(s.subjectId, (map.get(s.subjectId) ?? 0) + s.minutes);
     return map;
   }, [sessions]);
 
@@ -89,10 +90,10 @@ export default function PlanPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Plan de estudios</h1>
+          <h2 className="display text-3xl">Plan de carrera</h2>
           {planMeta ? (
             <p className="text-sm text-muted-foreground">
               {planMeta.career}
@@ -173,7 +174,7 @@ export default function PlanPage() {
         <div className="space-y-8">
           {CATEGORY_ORDER.filter((c) => grouped.has(c)).map((cat) => (
             <section key={cat} className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h2 className="eyebrow">
                 {CATEGORY_LABELS[cat]}
               </h2>
               {[...grouped.get(cat)!.entries()].map(([group, items]) => (
