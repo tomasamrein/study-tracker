@@ -28,9 +28,11 @@ import {
 import { toast } from "sonner";
 
 export function ManualSessionDialog() {
-  const { subjects, addSession } = useStore();
+  const { subjects, areas, addSession } = useStore();
   const [open, setOpen] = useState(false);
+  const [areaId, setAreaId] = useState("carrera");
   const [subjectId, setSubjectId] = useState("");
+  const [label, setLabel] = useState("");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [hours, setHours] = useState("1");
   const [minutes, setMinutes] = useState("0");
@@ -45,7 +47,8 @@ export function ManualSessionDialog() {
 
   const submit = () => {
     const totalMin = Number(hours) * 60 + Number(minutes);
-    if (!subjectId) {
+    const isCarrera = areaId === "carrera";
+    if (isCarrera && !subjectId) {
       toast.error("Elegí una materia.");
       return;
     }
@@ -56,7 +59,16 @@ export function ManualSessionDialog() {
     // Registrar a las 12:00 del día elegido para evitar saltos de zona horaria.
     const startedAt = new Date(`${date}T12:00:00`).toISOString();
     const trimmed = note.trim();
-    addSession({ subjectId, startedAt, minutes: totalMin, source: "manual", ...(trimmed ? { note: trimmed } : {}) });
+    const project = label.trim();
+    addSession({
+      areaId,
+      subjectId: isCarrera ? subjectId : null,
+      ...(!isCarrera && project ? { label: project } : {}),
+      startedAt,
+      minutes: totalMin,
+      source: "manual",
+      ...(trimmed ? { note: trimmed } : {}),
+    });
     toast.success("Sesión registrada");
     setOpen(false);
     setNote("");
@@ -67,18 +79,48 @@ export function ManualSessionDialog() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <Plus className="h-4 w-4" />
-          Cargar sesión
+          Cargar foco
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Cargar sesión manual</DialogTitle>
+          <DialogTitle>Cargar foco manual</DialogTitle>
           <DialogDescription>
-            Registrá tiempo de estudio que no hiciste con el pomodoro.
+            Registrá tiempo de enfoque que no hiciste con el timer.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">
+              Área
+            </Label>
+            <Select value={areaId} onValueChange={setAreaId}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {areas.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {areaId !== "carrera" ? (
+            <div>
+              <Label className="mb-1.5 block text-xs text-muted-foreground">
+                Proyecto o tarea
+              </Label>
+              <Input
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="Ej. CRM de turnos"
+              />
+            </div>
+          ) : (
           <div>
             <Label className="mb-1.5 block text-xs text-muted-foreground">
               Materia
@@ -109,6 +151,7 @@ export function ManualSessionDialog() {
               </SelectContent>
             </Select>
           </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <div>

@@ -14,17 +14,31 @@ import { useStore } from "./store";
 import { STATE_META } from "./types";
 import { usePomodoro, type Phase, type PomodoroController } from "./use-pomodoro";
 
-const BASE_TITLE = "Study Tracker — Ingeniería en Informática";
+const BASE_TITLE = "Foco — tracker de éxito";
 const PHASE_TITLE: Record<Phase, string> = {
   focus: "Foco",
   short: "Descanso",
   long: "Descanso largo",
 };
+const SELECTION_KEY = "foco:last-selection";
 
-interface PomodoroContextValue extends PomodoroController {
-  /** Materia a la que se imputan los focos completados. */
+interface Selection {
+  areaId: string;
   subjectId: string;
+  label: string;
+  methodId: string;
+}
+
+interface PomodoroContextValue extends PomodoroController, Selection {
+  setAreaId: (id: string) => void;
+  /** Materia a la que se imputan los focos del área carrera. */
   setSubjectId: (id: string) => void;
+  /** Proyecto / tema libre para las demás áreas. */
+  setLabel: (label: string) => void;
+  setMethodId: (id: string) => void;
+  /** Id de la última sesión registrada por el timer (para autoevaluarla). */
+  lastSessionId: string | null;
+  clearLastSession: () => void;
 }
 
 const PomodoroContext = createContext<PomodoroContextValue | null>(null);
@@ -52,44 +66,80 @@ function beep() {
   }
 }
 
+function readSelection(): Partial<Selection> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(SELECTION_KEY);
+    return raw ? (JSON.parse(raw) as Partial<Selection>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function PomodoroProvider({ children }: { children: React.ReactNode }) {
-  const { settings, subjects, addSession } = useStore();
-  const [subjectId, setSubjectId] = useState("");
+  const { settings, subjects, areas, addSession } = useStore();
+  // Recupera la última selección (arranque sin fricción).
+  const [rawSel, setSel] = useState<Selection>(() => ({
+    areaId: "carrera",
+    subjectId: "",
+    label: "",
+    methodId: "",
+    ...readSelection(),
+  }));
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+
+  // Materia por defecto: primera en curso (o la primera sin terminar).
+  const sel = useMemo<Selection>(() => {
+    if (subjects.length === 0) return rawSel;
+    if (rawSel.subjectId && subjects.some((s) => s.id === rawSel.subjectId)) return rawSel;
+    const priority = ["cursando", "regular", "recursando"];
+    const chosen =
+      subjects.find((s) => priority.includes(s.state)) ??
+      subjects.find((s) => !STATE_META[s.state].done) ??
+      subjects[0];
+    return { ...rawSel, subjectId: chosen?.id ?? "" };
+  }, [rawSel, subjects]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SELECTION_KEY, JSON.stringify(rawSel));
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  }, [rawSel]);
 
   // Refs para leer valores actuales dentro de callbacks estables.
-  const subjectIdRef = useRef(subjectId);
-  subjectIdRef.current = subjectId;
+  const selRef = useRef(sel);
   const soundRef = useRef(settings.soundEnabled);
-  soundRef.current = settings.soundEnabled;
   const subjectsRef = useRef(subjects);
-  subjectsRef.current = subjects;
-
-  // Selección por defecto: primera materia en curso (o la primera sin terminar).
+  const areasRef = useRef(areas);
   useEffect(() => {
-    if (subjectId || subjects.length === 0) return;
-    const priority = ["cursando", "regular", "recursando"];
-    const active = subjects.find((s) => priority.includes(s.state));
-    const fallback = subjects.find((s) => !STATE_META[s.state].done);
-    const chosen = active ?? fallback ?? subjects[0];
-    if (chosen) setSubjectId(chosen.id);
-  }, [subjects, subjectId]);
+    selRef.current = sel;
+    soundRef.current = settings.soundEnabled;
+    subjectsRef.current = subjects;
+    areasRef.current = areas;
+  });
 
   const handleFocusComplete = useCallback(
     (minutes: number) => {
       if (soundRef.current) beep();
-      const sid = subjectIdRef.current;
-      if (!sid) {
-        toast.warning("Foco completado, pero no había materia seleccionada.");
-        return;
-      }
-      addSession({
-        subjectId: sid,
+      const { areaId, subjectId, label, methodId } = selRef.current;
+      const isCarrera = areaId === "carrera";
+      const trimmed = label.trim();
+      const id = addSession({
+        areaId,
+        subjectId: isCarrera && subjectId ? subjectId : null,
+        ...(trimmed && !isCarrera ? { label: trimmed } : {}),
+        ...(methodId ? { methodId } : {}),
         startedAt: new Date(Date.now() - minutes * 60_000).toISOString(),
         minutes,
         source: "pomodoro",
       });
-      const name = subjectsRef.current.find((s) => s.id === sid)?.name ?? "materia";
-      toast.success(`+${minutes} min registrados en ${name} 🎉`);
+      setLastSessionId(id);
+      const target = isCarrera
+        ? subjectsRef.current.find((s) => s.id === subjectId)?.name
+        : trimmed || areasRef.current.find((a) => a.id === areaId)?.name;
+      toast.success(`+${minutes} min de enfoque${target ? ` · ${target}` : ""}`);
     },
     [addSession],
   );
@@ -109,7 +159,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     if (pomo.running) {
       const mm = String(Math.floor(pomo.remaining / 60)).padStart(2, "0");
       const ss = String(pomo.remaining % 60).padStart(2, "0");
-      document.title = `${mm}:${ss} · ${PHASE_TITLE[pomo.phase]} — Study Tracker`;
+      document.title = `${mm}:${ss} · ${PHASE_TITLE[pomo.phase]} — Foco`;
     } else {
       document.title = BASE_TITLE;
     }
@@ -118,9 +168,30 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pomo.running, pomo.remaining, pomo.phase]);
 
+  const setAreaId = useCallback((areaId: string) => setSel((p) => ({ ...p, areaId })), []);
+  const setSubjectId = useCallback(
+    (subjectId: string) => setSel((p) => ({ ...p, subjectId })),
+    [],
+  );
+  const setLabel = useCallback((label: string) => setSel((p) => ({ ...p, label })), []);
+  const setMethodId = useCallback(
+    (methodId: string) => setSel((p) => ({ ...p, methodId })),
+    [],
+  );
+  const clearLastSession = useCallback(() => setLastSessionId(null), []);
+
   const value = useMemo<PomodoroContextValue>(
-    () => ({ ...pomo, subjectId, setSubjectId }),
-    [pomo, subjectId],
+    () => ({
+      ...pomo,
+      ...sel,
+      setAreaId,
+      setSubjectId,
+      setLabel,
+      setMethodId,
+      lastSessionId,
+      clearLastSession,
+    }),
+    [pomo, sel, setAreaId, setSubjectId, setLabel, setMethodId, lastSessionId, clearLastSession],
   );
 
   return (

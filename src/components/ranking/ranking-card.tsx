@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const MEDAL_COLORS = ["text-amber-400", "text-slate-300", "text-orange-400"];
+const MEDAL_COLORS = ["text-foreground", "text-foreground/70", "text-foreground/50"];
 
 /** Tarjeta compacta del podio semanal para el Dashboard. Sólo en modo nube. */
 export function RankingCard() {
@@ -35,7 +35,7 @@ export function RankingCard() {
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Trophy className="h-4 w-4 text-amber-400" />
+            <Trophy className="h-4 w-4 text-foreground" />
             Ranking semanal
           </CardTitle>
           <CardDescription>Horas estudiadas esta semana</CardDescription>

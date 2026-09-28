@@ -12,7 +12,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[Study Tracker error]", error);
+    console.error("[Foco error]", error);
   }, [error]);
 
   return (

@@ -21,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             </PomodoroProvider>
           </StoreProvider>
         </AuthGate>
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="bottom-right" />
       </AuthProvider>
     </ThemeProvider>
   );

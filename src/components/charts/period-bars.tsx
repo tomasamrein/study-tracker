@@ -26,7 +26,7 @@ export function PeriodBars({
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: -16 }}>
+        <BarChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
           <CartesianGrid
             strokeDasharray="3 3"
             vertical={false}

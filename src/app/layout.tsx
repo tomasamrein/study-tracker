@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/app-shell";
 
-// Cuerpo de texto: Inter (moderna y muy legible).
-const inter = Inter({
-  variable: "--font-inter",
+// UI y cuerpo: Geist (neo-grotesca, neutra y muy legible).
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
   display: "swap",
 });
 
-// Títulos: Space Grotesk (geométrica, con carácter).
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Títulos grandes y cifras: Instrument Serif (editorial, con contraste).
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
   display: "swap",
 });
 
-// Monoespaciada para el temporizador y códigos.
+// Monoespaciada para el temporizador, etiquetas y números.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -26,12 +28,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Study Tracker — Ingeniería en Informática",
+  title: "Foco — tracker de éxito",
   description:
-    "Tracker personal de estudio: pomodoros, horas por materia, rachas y plan de estudios.",
+    "Enfoque por áreas, metas, tareas, hábitos, detox de dopamina y métodos de estudio.",
 };
 
-// Tema por defecto: oscuro (negro + azul). Sólo cambia si el usuario eligió claro.
+// Tema por defecto: oscuro. Sólo cambia si el usuario eligió claro.
 const themeScript = `(function(){try{var t=localStorage.getItem('study-tracker:theme');if(t!=='light')document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}})();`;
 
 export default function RootLayout({
@@ -42,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}
+      className={`${geist.variable} ${instrumentSerif.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <head>

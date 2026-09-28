@@ -20,9 +20,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Metric = "week" | "streak";
 
-const MEDAL_COLORS = ["text-amber-400", "text-slate-300", "text-orange-400"];
+const MEDAL_COLORS = ["text-foreground", "text-foreground/70", "text-foreground/50"];
 
-export default function RankingPage() {
+export function RankingView() {
   const { cloud, user } = useAuth();
   const { entries, loaded } = useLeaderboard();
   const [metric, setMetric] = useState<Metric>("week");
@@ -31,7 +31,7 @@ export default function RankingPage() {
 
   if (!cloud) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="max-w-2xl">
         <Card>
           <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
             <Users className="h-8 w-8 text-muted-foreground" />
@@ -48,9 +48,9 @@ export default function RankingPage() {
   if (!loaded) return <LoadingScreen />;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Ranking</h1>
+        <h2 className="display text-3xl">Ranking</h2>
         <p className="text-sm text-muted-foreground">
           Competencia de estudio en tiempo real ⚡
         </p>

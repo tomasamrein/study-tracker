@@ -103,7 +103,7 @@ function SpotifyPlayerInner() {
         <div className="flex items-center justify-between gap-2">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Music className="h-4 w-4 text-emerald-500" />
+              <Music className="h-4 w-4 text-foreground" />
               Música para concentrarte
             </CardTitle>
             <CardDescription>
@@ -266,7 +266,7 @@ function SpotifyFallback() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Music className="h-4 w-4 text-emerald-500" />
+          <Music className="h-4 w-4 text-foreground" />
           Música para concentrarte
         </CardTitle>
         <CardDescription>

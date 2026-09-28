@@ -1,6 +1,6 @@
 import confetti from "canvas-confetti";
 
-const BLUE = ["#3b82f6", "#38bdf8", "#6366f1", "#22d3ee", "#a855f7", "#ffffff"];
+const MONO = ["#ffffff", "#e5e5e5", "#a3a3a3", "#525252", "#171717"];
 
 /** Celebración grande (meta diaria cumplida). */
 export function celebrate() {
@@ -11,14 +11,14 @@ export function celebrate() {
       angle: 60,
       spread: 70,
       origin: { x: 0 },
-      colors: BLUE,
+      colors: MONO,
     });
     confetti({
       particleCount: 4,
       angle: 120,
       spread: 70,
       origin: { x: 1 },
-      colors: BLUE,
+      colors: MONO,
     });
     if (Date.now() < end) requestAnimationFrame(frame);
   })();
@@ -27,7 +27,7 @@ export function celebrate() {
     spread: 90,
     startVelocity: 38,
     origin: { y: 0.6 },
-    colors: BLUE,
+    colors: MONO,
   });
 }
 
@@ -38,6 +38,6 @@ export function burst() {
     spread: 70,
     startVelocity: 32,
     origin: { y: 0.7 },
-    colors: BLUE,
+    colors: MONO,
   });
 }

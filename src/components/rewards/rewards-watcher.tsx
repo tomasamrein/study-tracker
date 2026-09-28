@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useStore } from "@/lib/store";
-import { computeAchievements } from "@/lib/achievements";
+import { useAchievements } from "@/lib/use-achievements";
 import { formatHours, todayMinutes } from "@/lib/stats";
 import { burst, celebrate } from "@/lib/confetti";
 
@@ -30,8 +30,8 @@ export function RewardsWatcher() {
     const done = todayMinutes(sessions);
     if (done >= dailyGoalMinutes && lastGoalCelebrated !== todayKey) {
       celebrate();
-      toast.success("¡Meta diaria cumplida! 🎉", {
-        description: `Estudiaste ${formatHours(done)} h hoy. ¡Sos un crack, Tomás!`,
+      toast.success("Meta diaria cumplida", {
+        description: `${formatHours(done)} h de enfoque hoy. Así se construye.`,
         duration: 6000,
       });
       markGoalCelebrated(todayKey);
@@ -39,11 +39,11 @@ export function RewardsWatcher() {
   }, [loaded, sessions, dailyGoalMinutes, lastGoalCelebrated, markGoalCelebrated]);
 
   // Logros nuevos (sin notificar los ya desbloqueados al cargar).
+  const list = useAchievements();
   const initRef = useRef(false);
   const prevRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!loaded) return;
-    const list = computeAchievements({ sessions, dailyGoalMinutes });
     const unlockedIds = list.filter((a) => a.unlocked).map((a) => a.id);
     if (!initRef.current) {
       prevRef.current = new Set(unlockedIds);
@@ -57,13 +57,13 @@ export function RewardsWatcher() {
       for (const id of newly) {
         const a = list.find((x) => x.id === id);
         if (a)
-          toast.success(`🏆 Logro desbloqueado: ${a.title}`, {
+          toast.success(`Logro desbloqueado: ${a.title}`, {
             description: a.description,
             duration: 5000,
           });
       }
     }
-  }, [loaded, sessions, dailyGoalMinutes]);
+  }, [loaded, list]);
 
   return null;
 }

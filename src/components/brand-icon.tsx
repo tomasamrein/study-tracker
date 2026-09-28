@@ -1,6 +1,6 @@
-import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Marca de Foco: un punto sólido dentro de un anillo (foco = centro). */
 export function BrandIcon({
   className,
   iconClassName,
@@ -11,11 +11,14 @@ export function BrandIcon({
   return (
     <div
       className={cn(
-        "flex items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-400 text-white shadow-md",
+        "flex items-center justify-center rounded-lg bg-foreground text-background",
         className,
       )}
     >
-      <GraduationCap className={cn("h-5 w-5", iconClassName)} />
+      <svg viewBox="0 0 24 24" className={cn("h-5 w-5", iconClassName)} aria-hidden>
+        <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+        <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+      </svg>
     </div>
   );
 }

@@ -33,7 +33,7 @@ export function SubjectPie({ data, maxSlices = 8 }: Props) {
         subjectId: "__otras__",
         name: `Otras (${rest.length})`,
         code: "—",
-        color: "#64748b",
+        color: "var(--muted)",
         minutes: restMinutes,
       },
     ];
