@@ -14,6 +14,7 @@ import {
   Ellipsis,
   Sun,
   Timer,
+  CandlestickChart,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ const NAV = [
   { href: "/metas", label: "Metas", icon: Goal, mobile: false },
   { href: "/estudio", label: "Estudio", icon: BookOpen, mobile: false },
   { href: "/estadisticas", label: "Estadísticas", icon: BarChart3, mobile: false },
+  { href: "/trading", label: "Trading", icon: CandlestickChart, mobile: false },
 ];
 
 function isActive(pathname: string, href: string) {
