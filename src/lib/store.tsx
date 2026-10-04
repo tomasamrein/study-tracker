@@ -21,6 +21,7 @@ import {
   weeklySummary,
 } from "./stats";
 import { toast } from "sonner";
+import { defaultHabits, defaultVices, migrateLife, sameArea } from "./life";
 import {
   DEFAULT_AREAS,
   DEFAULT_DAILY_GOAL_MINUTES,
@@ -38,29 +39,14 @@ import {
   type Vice,
 } from "./types";
 
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 
 /** Hábitos, contadores y metas con los que arranca la app (v2). */
 function seedSuccess(): Pick<AppState, "habits" | "vices" | "goals"> {
   const now = new Date().toISOString();
-  const habit = (id: string, name: string, kind: Habit["kind"]): Habit => ({
-    id,
-    name,
-    kind,
-    createdAt: now,
-  });
   return {
-    habits: [
-      habit("h-no-scroll", "Sin redes ni scroll", "avoid"),
-      habit("h-no-shorts", "Sin shorts / reels", "avoid"),
-      habit("h-ejercicio", "Ejercicio", "build"),
-      habit("h-lectura", "Leer 20 minutos", "build"),
-      habit("h-dormir", "Dormir antes de las 00", "build"),
-    ],
-    vices: [
-      { id: "v-redes", name: "Redes sociales", since: now, relapses: [], best: 0 },
-      { id: "v-shorts", name: "Shorts / Reels / TikTok", since: now, relapses: [], best: 0 },
-    ],
+    habits: defaultHabits(now),
+    vices: defaultVices(now),
     goals: [
       {
         id: "g-carrera-semana",
@@ -73,9 +59,9 @@ function seedSuccess(): Pick<AppState, "habits" | "vices" | "goals"> {
         createdAt: now,
       },
       {
-        id: "g-agencia-semana",
-        title: "10 h de agencia",
-        areaId: "agencia",
+        id: "g-trading-semana",
+        title: "10 h de trading",
+        areaId: "trading",
         horizon: "semana",
         metric: "minutes",
         target: 600,
@@ -84,7 +70,7 @@ function seedSuccess(): Pick<AppState, "habits" | "vices" | "goals"> {
       },
       {
         id: "g-detox-semana",
-        title: "7 días sin redes",
+        title: "7 días de no fap",
         horizon: "semana",
         metric: "count",
         target: 7,
@@ -100,7 +86,7 @@ function seedSuccess(): Pick<AppState, "habits" | "vices" | "goals"> {
 function withDefaultAreas(areas: FocusArea[] | undefined): FocusArea[] {
   const list = [...(areas ?? [])];
   for (const a of DEFAULT_AREAS) {
-    if (!list.some((x) => x.id === a.id)) list.push({ ...a });
+    if (!list.some((x) => sameArea(x, a))) list.push({ ...a });
   }
   return list;
 }
@@ -144,9 +130,10 @@ function mergeWithSeed(saved: AppState, user?: AuthUser | null): AppState {
     planMeta: saved.planMeta ?? null,
     areas: withDefaultAreas(saved.areas),
     goals: saved.goals ?? seeds?.goals ?? [],
-    habits: saved.habits ?? seeds?.habits ?? [],
+    ...((saved.version ?? 1) < 3
+      ? migrateLife(saved.habits ?? seeds?.habits ?? [], saved.vices ?? seeds?.vices ?? [], new Date().toISOString())
+      : { habits: saved.habits ?? [], vices: saved.vices ?? [] }),
     habitLog: saved.habitLog ?? {},
-    vices: saved.vices ?? seeds?.vices ?? [],
     daily: saved.daily ?? {},
     version: STATE_VERSION,
   };

@@ -28,9 +28,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Foco — tracker de éxito",
+  title: "Foco — segundo cerebro",
   description:
-    "Enfoque por áreas, metas, tareas, hábitos, detox de dopamina y métodos de estudio.",
+    "Tu segundo cerebro: journaling, trading, carrera, deep work, hábitos, metas y tareas en un solo lugar.",
 };
 
 // Tema por defecto: oscuro. Sólo cambia si el usuario eligió claro.

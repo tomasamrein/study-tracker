@@ -147,7 +147,7 @@ export default function EnfoquePage() {
     <div className="mx-auto max-w-5xl space-y-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
-          <p className="eyebrow">Enfoque</p>
+          <p className="eyebrow">Deep work</p>
           <h1 className="display text-5xl md:text-6xl">Una cosa a la vez.</h1>
         </div>
         <ManualSessionDialog />

@@ -8,6 +8,7 @@ import { useStore } from "@/lib/store";
 import { dayKey } from "@/lib/stats";
 import { habitBestStreak, habitDoneInLast, habitStreak, lastNDayKeys } from "@/lib/habits";
 import type { Habit } from "@/lib/types";
+import { SUGGESTED_HABITS } from "@/lib/life";
 import { LoadingScreen } from "@/components/loading-screen";
 import { HabitChecklist } from "@/components/habits/habit-checklist";
 import { ViceCounter } from "@/components/habits/vice-counter";
@@ -37,7 +38,7 @@ export default function HabitosPage() {
         <p className="eyebrow">Hábitos y detox</p>
         <h1 className="display text-5xl md:text-6xl">Sos lo que repetís.</h1>
         <p className="max-w-xl text-muted-foreground">
-          Construí lo que te suma y medí cuántos días llevás lejos de la dopamina barata.
+          Construí lo que te suma y medí cuántos días llevás limpio: no fap, redes o lo que quieras cortar.
         </p>
       </header>
 
@@ -83,7 +84,7 @@ export default function HabitosPage() {
               <Input
                 value={viceName}
                 onChange={(e) => setViceName(e.target.value)}
-                placeholder="Nuevo contador (ej. Videojuegos)"
+                placeholder="Nuevo contador (ej. Redes sociales)"
               />
               <Button type="submit" variant="outline" size="icon" aria-label="Agregar contador">
                 <Plus className="h-4 w-4" />
@@ -193,6 +194,41 @@ export default function HabitosPage() {
           </CardContent>
         </Card>
       </section>
+
+      <SuggestedHabits />
     </div>
+  );
+}
+
+function SuggestedHabits() {
+  const { habits, addHabit } = useStore();
+  const names = new Set(habits.filter((h) => !h.archived).map((h) => h.name.toLowerCase()));
+  const pending = SUGGESTED_HABITS.filter((s) => !names.has(s.name.toLowerCase()));
+  if (pending.length === 0) return null;
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="display text-3xl">Sugeridos</h2>
+        <p className="text-sm text-muted-foreground">Hábitos que suelen tener las personas que rinden alto. Sumalos con un toque.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {pending.map((s) => (
+          <Card key={s.name} size="sm">
+            <CardContent className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm">
+                  {s.name}
+                  <span className="eyebrow ml-2 text-[10px]">{s.kind === "avoid" ? "detox" : "construir"}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">{s.why}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => addHabit(s.name, s.kind)}>
+                <Plus className="h-4 w-4" /> Sumar
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
 }
