@@ -1,68 +1,84 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useTrading } from "@/lib/trading/store";
-import { attemptSummary } from "@/lib/trading/accounts";
-import { ALL_MODES } from "@/lib/trading/types";
-import { formatMoney } from "@/components/trading/trading-header";
+import { useFilteredTrades } from "@/lib/trading/selectors";
+import { dailyStats, monthKey, summarize } from "@/lib/trading/calc";
+import { money, pct, pnlClass, rMult, todayInTz } from "@/lib/trading/format";
+import { ALL_MODES, type Trade } from "@/lib/trading/types";
+import { AccountRiskCard, PersonalLimitsAlert, PositionCalculator } from "@/components/trading/risk-panel";
+import { DayJournalEditor } from "@/components/trading/day-journal";
+import { Mini } from "@/components/trading/mini";
+import { TradeFormDialog, useBlankTrade } from "@/components/trading/trade-form";
+import { VerifyRulesNote } from "@/components/trading/trading-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function TradingResumen() {
+export default function TradingHoy() {
   const { state } = useTrading();
-  const sel = state.settings.selectedModeId;
-  const modeId = sel === ALL_MODES ? undefined : sel;
-  const accounts = state.accounts.filter((a) => !modeId || a.modeId === modeId);
-  const active = accounts.filter((a) => a.status === "activa");
-  const evals = attemptSummary(state.accounts, "eval");
+  const [editing, setEditing] = useState<Trade | null>(null);
+  const blank = useBlankTrade();
+  const today = todayInTz(state.settings.timezone);
   const cur = state.settings.currency;
-  const modeName = (id: string) => state.modes.find((m) => m.id === id)?.name ?? id;
+  const sel = state.settings.selectedModeId;
+  const all = useFilteredTrades();
+  const todayList = all.filter((x) => x.day === today);
+  const monthList = all.filter((x) => monthKey(x.day) === today.slice(0, 7));
+  const t = summarize(todayList);
+  const mo = summarize(monthList);
+  const accounts = state.accounts.filter((a) => a.status === "activa" && (sel === ALL_MODES || a.modeId === sel));
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Cuentas activas" value={String(active.length)} />
-        <Stat label="Evals pagadas" value={String(evals.total)} />
-        <Stat label="Aprobadas / perdidas" value={`${evals.passed} / ${evals.lost}`} />
-        <Stat label="Gastado en evals" value={formatMoney(evals.spent, cur)} />
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="display mr-auto text-3xl">Hoy</h2>
+        <Button
+          onClick={() => {
+            if (state.accounts.length === 0) return toast.error("Primero creá una cuenta en la pestaña Cuentas.");
+            setEditing(blank());
+          }}
+        >
+          <Plus className="h-4 w-4" /> Cargar trade
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cuentas activas</CardTitle>
-          <CardDescription>El registro de trades, calendario y estadísticas llegan en las próximas etapas.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {active.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 text-sm text-muted-foreground">
-              No tenés cuentas activas en este modo.
-              <Button asChild size="sm">
-                <Link href="/trading/cuentas">Crear cuenta</Link>
-              </Button>
-            </div>
-          ) : (
-            active.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                <span>
-                  {a.name} <span className="text-muted-foreground">· {modeName(a.modeId)} · {a.firm}</span>
-                </span>
-                <span className="font-mono tabular-nums">{formatMoney(a.size, cur)}</span>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+      <PersonalLimitsAlert />
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Card size="sm">
-      <CardContent className="space-y-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-mono text-2xl tabular-nums">{value}</p>
-      </CardContent>
-    </Card>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Mini label="PnL de hoy" value={money(t.totalPnl, cur, true)} className={pnlClass(t.totalPnl)} hint={`${t.count} trades · ${rMult(todayList.reduce((s, x) => s + (x.m.r ?? 0), 0))}`} />
+        <Mini label="PnL del mes" value={money(mo.totalPnl, cur, true)} className={pnlClass(mo.totalPnl)} hint={`${dailyStats(monthList).length} días operados`} />
+        <Mini label="Winrate del mes" value={pct(mo.winrate)} />
+        <Mini label="Expectativa del mes" value={rMult(mo.expectancyR)} />
+      </div>
+
+      {accounts.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-3 py-6 text-sm text-muted-foreground">
+            No tenés cuentas activas en este modo.
+            <Button asChild size="sm"><Link href="/trading/cuentas">Crear cuenta</Link></Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {accounts.map((a) => <AccountRiskCard key={a.id} account={a} />)}
+          </div>
+          <VerifyRulesNote />
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Diario de hoy</CardTitle></CardHeader>
+          <CardContent><DayJournalEditor date={today} /></CardContent>
+        </Card>
+        <PositionCalculator />
+      </div>
+
+      {editing && <TradeFormDialog trade={editing} onClose={() => setEditing(null)} />}
+    </div>
   );
 }

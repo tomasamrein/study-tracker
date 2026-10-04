@@ -28,6 +28,7 @@ import BlurText from "@/components/react-bits/BlurText";
 import CountUp from "@/components/react-bits/CountUp";
 import ShinyText from "@/components/react-bits/ShinyText";
 import SpotlightCard from "@/components/react-bits/SpotlightCard";
+import { TradingSummaryCard } from "@/components/trading/trading-summary-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -276,6 +277,8 @@ export default function HoyPage() {
           </CardContent>
         </Card>
       </section>
+
+      <TradingSummaryCard />
 
       {/* Cierre del día */}
       <section>

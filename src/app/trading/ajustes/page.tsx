@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { buildSeed, hasSeed, withoutSeed } from "@/lib/trading/seed";
+import { filterTrades } from "@/lib/trading/selectors";
+import { downloadText, toCsv, tradesToCsv } from "@/lib/trading/csv";
+import { todayInTz } from "@/lib/trading/format";
+import { ALL_MODES, type TradingState } from "@/lib/trading/types";
+import { ArrowDown, ArrowUp, Database, Download, Eye, EyeOff, Plus, Trash2, Upload } from "lucide-react";
 import { newId, useTrading, type TradingCollection } from "@/lib/trading/store";
 import type { Instrument, ListItem, PersonalLimits } from "@/lib/trading/types";
 import { NumField, TextField } from "@/components/trading/fields";
@@ -25,6 +31,7 @@ export default function AjustesPage() {
       </div>
       <LimitsCard />
       <GeneralCard />
+      <DataCard />
     </div>
   );
 }
@@ -275,6 +282,89 @@ function GeneralCard() {
             onBlur={(e) => updateSettings({ timeframes: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
           />
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DataCard() {
+  const { state, update, replaceAll } = useTrading();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const today = todayInTz(state.settings.timezone);
+  const seeded = hasSeed(state);
+  const accName = (id?: string | null) => state.accounts.find((a) => a.id === id)?.name ?? "";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Datos y backup</CardTitle>
+        <CardDescription>Exportá tus datos cuando quieras. El backup completo (JSON) se puede volver a importar.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => downloadText(`trades-${today}.csv`, tradesToCsv(filterTrades(state, {}, ALL_MODES), state))}>
+          <Download className="h-4 w-4" /> Trades (CSV)
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() =>
+            downloadText(
+              `retiros-y-gastos-${today}.csv`,
+              toCsv([
+                ...state.payouts.map((p) => ({ tipo: "retiro", fecha: p.date, cuenta: accName(p.accountId), concepto: p.notes ?? "", monto: p.amount })),
+                ...state.expenses.map((e) => ({ tipo: "gasto", fecha: e.date, cuenta: accName(e.accountId), concepto: e.concept, monto: -e.amount })),
+                ...state.accounts.map((a) => ({ tipo: "costo cuenta", fecha: a.startDate, cuenta: a.name, concepto: a.firm, monto: -a.cost })),
+              ]),
+            )
+          }
+        >
+          <Download className="h-4 w-4" /> Pagos (CSV)
+        </Button>
+        <Button variant="outline" onClick={() => downloadText(`trading-backup-${today}.json`, JSON.stringify(state, null, 2), "application/json")}>
+          <Download className="h-4 w-4" /> Backup completo (JSON)
+        </Button>
+        <Button variant="outline" onClick={() => fileRef.current?.click()}>
+          <Upload className="h-4 w-4" /> Restaurar backup
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (!f) return;
+            try {
+              const data = JSON.parse(await f.text()) as TradingState;
+              if (!Array.isArray(data.trades) || !Array.isArray(data.accounts)) throw new Error("formato");
+              if (confirm("Esto reemplaza todos tus datos de Trading por los del backup. ¿Seguir?")) {
+                replaceAll(data);
+                toast.success("Backup restaurado.");
+              }
+            } catch {
+              toast.error("El archivo no es un backup válido de Trading.");
+            }
+          }}
+        />
+        <div className="basis-full" />
+        {seeded ? (
+          <Button variant="destructive" onClick={() => { update(withoutSeed); toast.success("Datos de ejemplo borrados."); }}>
+            <Trash2 className="h-4 w-4" /> Borrar datos de ejemplo
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => {
+              update((prev) => {
+                const s = buildSeed(prev, today);
+                return { ...prev, accounts: [...prev.accounts, ...s.accounts], trades: [...prev.trades, ...s.trades], payouts: [...prev.payouts, ...s.payouts] };
+              });
+              toast.success("Cargué datos de ejemplo (marcados como “Ejemplo”).");
+            }}
+          >
+            <Database className="h-4 w-4" /> Cargar datos de ejemplo
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

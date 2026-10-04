@@ -141,6 +141,88 @@ export interface TradingSettings {
   limits: PersonalLimits;
 }
 
+/** Diario del día (checklists, emoción, notas). Clave: yyyy-MM-dd. */
+export interface DayJournal {
+  date: string;
+  preChecks: string[];
+  closeChecks: string[];
+  followedPlan?: boolean | null;
+  mistakes?: string;
+  learned?: string;
+  emotion?: number | null;
+  notes?: string;
+}
+
+export interface Payout {
+  id: string;
+  accountId: string;
+  date: string;
+  amount: number;
+  notes?: string;
+  seed?: boolean;
+}
+
+/** Gasto extra (reactivación, suscripción, datos…) aparte del costo de la cuenta. */
+export interface Expense {
+  id: string;
+  accountId?: string | null;
+  date: string;
+  amount: number;
+  concept: string;
+  seed?: boolean;
+}
+
+export interface TradingPlan {
+  objective: string;
+  instruments: string;
+  schedule: string;
+  allowedSetups: string;
+  never: string;
+  riskPerTrade: string;
+  dailyStop: string;
+  notes: string;
+}
+
+export type ReviewKind = "semana" | "mes";
+
+export interface Review {
+  id: string;
+  kind: ReviewKind;
+  /** yyyy-MM-dd del inicio del período. */
+  period: string;
+  best: string;
+  worst: string;
+  mistakes: string;
+  improve: string;
+  notes: string;
+}
+
+export type CriterionMetric =
+  | "trades"
+  | "expectancy"
+  | "winrate"
+  | "planPct"
+  | "profitFactor"
+  | "pnl"
+  | "payoutDays";
+
+export interface PhaseCriterion {
+  id: string;
+  metric: CriterionMetric;
+  /** Valor mínimo a alcanzar. */
+  target: number;
+}
+
+export interface PhaseGoal {
+  id: string;
+  title: string;
+  /** Modo cuyos trades se miden. */
+  modeId: string;
+  /** Modo siguiente (solo descriptivo). */
+  nextModeId?: string | null;
+  criteria: PhaseCriterion[];
+}
+
 export interface TradingState {
   version: number;
   modes: TradingMode[];
@@ -151,6 +233,14 @@ export interface TradingState {
   sessions: ListItem[];
   emotions: ListItem[];
   tags: ListItem[];
+  journal: Record<string, DayJournal>;
+  payouts: Payout[];
+  expenses: Expense[];
+  plan: TradingPlan;
+  preChecklist: ListItem[];
+  closeChecklist: ListItem[];
+  reviews: Review[];
+  phaseGoals: PhaseGoal[];
   settings: TradingSettings;
 }
 

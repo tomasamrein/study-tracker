@@ -7,7 +7,12 @@ import { useTrading, useVisibleModes } from "@/lib/trading/store";
 import { ALL_MODES } from "@/lib/trading/types";
 
 const TABS = [
-  { href: "/trading", label: "Resumen" },
+  { href: "/trading", label: "Hoy" },
+  { href: "/trading/trades", label: "Trades" },
+  { href: "/trading/calendario", label: "Calendario" },
+  { href: "/trading/estadisticas", label: "Estadísticas" },
+  { href: "/trading/plan", label: "Plan" },
+  { href: "/trading/pagos", label: "Pagos" },
   { href: "/trading/cuentas", label: "Cuentas" },
   { href: "/trading/ajustes", label: "Ajustes" },
 ];

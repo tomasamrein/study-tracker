@@ -21,7 +21,13 @@ export type TradingCollection =
   | "setups"
   | "sessions"
   | "emotions"
-  | "tags";
+  | "tags"
+  | "payouts"
+  | "expenses"
+  | "preChecklist"
+  | "closeChecklist"
+  | "reviews"
+  | "phaseGoals";
 
 type Item<K extends TradingCollection> = TradingState[K][number];
 

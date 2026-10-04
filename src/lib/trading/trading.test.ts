@@ -40,3 +40,51 @@ describe("attemptSummary", () => {
     expect(attemptSummary(list).total).toBe(4);
   });
 });
+
+import { evaluateGoal } from "./goals";
+
+describe("evaluateGoal", () => {
+  it("mide trades, expectativa y cumplimiento del plan del modo", () => {
+    const s = freshTradingState();
+    const base = { accountId: "a", modeId: "paper", instrumentId: "mnq", direction: "long" as const, entry: 100, stop: 90, contracts: 1, createdAt: "" };
+    s.trades = [
+      { ...base, id: "1", entryAt: "2026-10-05T10:00", exit: 120, followedPlan: true },
+      { ...base, id: "2", entryAt: "2026-10-06T10:00", exit: 90, followedPlan: false },
+      { ...base, id: "3", modeId: "backtest", entryAt: "2026-10-06T10:00", exit: 90, followedPlan: true },
+    ];
+    const goal = s.phaseGoals.find((g) => g.modeId === "paper")!;
+    const [trades, exp, plan] = evaluateGoal(goal, s);
+    expect(trades).toMatchObject({ value: 2, done: false, pct: 4 });
+    expect(exp.value).toBeCloseTo(0.5);
+    expect(exp.done).toBe(true);
+    expect(plan).toMatchObject({ value: 50, done: false });
+  });
+});
+
+import { financeSummary } from "./accounts";
+
+describe("financeSummary", () => {
+  it("gastado vs retirado", () => {
+    const r = financeSummary(
+      [acc({ cost: 90 }), acc({ id: "2", cost: 90 })],
+      [{ id: "e", date: "2026-10-01", amount: 50, concept: "Reactivación" }],
+      [{ id: "p", accountId: "a", date: "2026-10-20", amount: 500 }],
+    );
+    expect(r).toEqual({ accountCosts: 180, expenses: 50, spent: 230, withdrawn: 500, net: 270 });
+  });
+});
+
+import { buildSeed, hasSeed, withoutSeed } from "./seed";
+
+describe("seed", () => {
+  it("genera datos marcados y se borran con un clic", () => {
+    const s = freshTradingState();
+    const seed = buildSeed(s, "2026-10-03");
+    const full = { ...s, ...seed };
+    expect(seed.trades.length).toBeGreaterThan(10);
+    expect(hasSeed(full)).toBe(true);
+    const clean = withoutSeed({ ...full, accounts: [...full.accounts, acc({ id: "mine" })] });
+    expect(hasSeed(clean)).toBe(false);
+    expect(clean.accounts.map((a) => a.id)).toEqual(["mine"]);
+  });
+});

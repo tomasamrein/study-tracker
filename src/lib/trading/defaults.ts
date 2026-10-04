@@ -81,6 +81,54 @@ export const DEFAULT_SETTINGS: TradingSettings = {
   },
 };
 
+export const EMPTY_PLAN = {
+  objective: "",
+  instruments: "MNQ",
+  schedule: "",
+  allowedSetups: "",
+  never: "",
+  riskPerTrade: "",
+  dailyStop: "",
+  notes: "",
+};
+
+export const DEFAULT_PRE_CHECKLIST = items([
+  "Revisé noticias del día",
+  "Marqué niveles clave en el contexto",
+  "Sé cuánto arriesgo por trade y mi corte diario",
+  "Estoy descansado y sin revancha pendiente",
+]);
+
+export const DEFAULT_CLOSE_CHECKLIST = items([
+  "Cargué todos los trades",
+  "Revisé capturas y anoté errores",
+  "Respeté el corte diario",
+]);
+
+export const DEFAULT_PHASE_GOALS = [
+  {
+    id: "goal-backtest",
+    title: "De Backtest a Paper",
+    modeId: "backtest",
+    nextModeId: "paper",
+    criteria: [
+      { id: "c1", metric: "trades" as const, target: 100 },
+      { id: "c2", metric: "expectancy" as const, target: 0.01 },
+    ],
+  },
+  {
+    id: "goal-paper",
+    title: "De Paper a Eval",
+    modeId: "paper",
+    nextModeId: "eval",
+    criteria: [
+      { id: "c1", metric: "trades" as const, target: 50 },
+      { id: "c2", metric: "expectancy" as const, target: 0.01 },
+      { id: "c3", metric: "planPct" as const, target: 90 },
+    ],
+  },
+];
+
 export function freshTradingState(): TradingState {
   return {
     version: TRADING_STATE_VERSION,
@@ -92,6 +140,14 @@ export function freshTradingState(): TradingState {
     sessions: DEFAULT_SESSIONS.map((s) => ({ ...s })),
     emotions: DEFAULT_EMOTIONS.map((s) => ({ ...s })),
     tags: [],
+    journal: {},
+    payouts: [],
+    expenses: [],
+    plan: { ...EMPTY_PLAN },
+    preChecklist: DEFAULT_PRE_CHECKLIST.map((s) => ({ ...s })),
+    closeChecklist: DEFAULT_CLOSE_CHECKLIST.map((s) => ({ ...s })),
+    reviews: [],
+    phaseGoals: structuredClone(DEFAULT_PHASE_GOALS),
     settings: structuredClone(DEFAULT_SETTINGS),
   };
 }
@@ -116,6 +172,14 @@ export function migrateTradingState(saved: Partial<TradingState> | null | undefi
     sessions: saved.sessions ?? base.sessions,
     emotions: saved.emotions ?? base.emotions,
     tags: saved.tags ?? [],
+    journal: saved.journal ?? {},
+    payouts: saved.payouts ?? [],
+    expenses: saved.expenses ?? [],
+    plan: { ...EMPTY_PLAN, ...(saved.plan ?? {}) },
+    preChecklist: saved.preChecklist ?? base.preChecklist,
+    closeChecklist: saved.closeChecklist ?? base.closeChecklist,
+    reviews: saved.reviews ?? [],
+    phaseGoals: saved.phaseGoals ?? base.phaseGoals,
     settings: {
       ...base.settings,
       ...(saved.settings ?? {}),
