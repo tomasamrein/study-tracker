@@ -15,6 +15,7 @@ import {
   Sun,
   Timer,
   CandlestickChart,
+  NotebookPen,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -37,13 +38,14 @@ import {
 
 const NAV = [
   { href: "/", label: "Hoy", icon: CircleDot, mobile: true },
-  { href: "/enfoque", label: "Enfoque", icon: Timer, mobile: true },
-  { href: "/tareas", label: "Tareas", icon: ListTodo, mobile: true },
+  { href: "/enfoque", label: "Deep work", icon: Timer, mobile: true },
+  { href: "/diario", label: "Diario", icon: NotebookPen, mobile: true },
   { href: "/habitos", label: "Hábitos", icon: Flame, mobile: true },
-  { href: "/metas", label: "Metas", icon: Goal, mobile: false },
-  { href: "/estudio", label: "Estudio", icon: BookOpen, mobile: false },
-  { href: "/estadisticas", label: "Estadísticas", icon: BarChart3, mobile: false },
   { href: "/trading", label: "Trading", icon: CandlestickChart, mobile: false },
+  { href: "/tareas", label: "Tareas", icon: ListTodo, mobile: false },
+  { href: "/metas", label: "Metas", icon: Goal, mobile: false },
+  { href: "/estudio", label: "Carrera", icon: BookOpen, mobile: false },
+  { href: "/estadisticas", label: "Estadísticas", icon: BarChart3, mobile: false },
 ];
 
 function isActive(pathname: string, href: string) {

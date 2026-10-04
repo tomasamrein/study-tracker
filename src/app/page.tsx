@@ -19,6 +19,7 @@ import {
 } from "@/lib/stats";
 import { methodOfTheDay } from "@/lib/methods";
 import { daysClean } from "@/lib/habits";
+import { findNofap } from "@/lib/life";
 import { LoadingScreen } from "@/components/loading-screen";
 import { HabitChecklist } from "@/components/habits/habit-checklist";
 import { ViceCounter } from "@/components/habits/vice-counter";
@@ -71,7 +72,7 @@ export default function HoyPage() {
   const method = methodOfTheDay(now);
   const goalPct = dailyGoalMinutes > 0 ? Math.min(100, (data.todayMin / dailyGoalMinutes) * 100) : 0;
   const weekGoals = goals.filter((g) => g.horizon === "semana").slice(0, 4);
-  const bestVice = [...vices].sort((a, b) => daysClean(b) - daysClean(a))[0];
+  const nofap = findNofap(vices);
   const areaName = areas.find((a) => a.id === pomo.areaId)?.name ?? "Carrera";
 
   const startFocus = () => {
@@ -103,7 +104,7 @@ export default function HoyPage() {
         <Card className="justify-between">
           <CardContent className="space-y-6">
             <div className="flex items-baseline justify-between">
-              <p className="eyebrow">Enfoque de hoy</p>
+              <p className="eyebrow">Deep work de hoy</p>
               <p className="font-mono text-xs text-muted-foreground tabular-nums">
                 meta {formatHours(dailyGoalMinutes)} h
               </p>
@@ -117,7 +118,7 @@ export default function HoyPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Button size="lg" onClick={startFocus} className="min-w-44">
                 <Play className="h-4 w-4" />
-                {pomo.running ? "Volver al foco" : "Empezar foco"}
+                {pomo.running ? "Volver al foco" : "Empezar deep work"}
               </Button>
               <span className="text-sm text-muted-foreground">
                 {areaName} · {pomo.running ? "en curso" : `${store.settings.focusMinutes}′`}
@@ -136,10 +137,11 @@ export default function HoyPage() {
             <span className="ml-1 font-sans text-sm text-muted-foreground">h</span>
           </Metric>
           <Metric
-            label="Días limpio"
-            hint={bestVice ? bestVice.name : "sin contadores"}
+            label="Días de no fap"
+            hint={nofap ? `mejor racha ${Math.max(nofap.best, daysClean(nofap))} d` : "creá el contador en Hábitos"}
           >
-            <CountUp to={bestVice ? daysClean(bestVice) : 0} duration={1} />
+            <CountUp to={nofap ? daysClean(nofap) : 0} duration={1} />
+            <span className="ml-1 font-sans text-sm text-muted-foreground">d</span>
           </Metric>
           <Metric label="Ritual" hint="días con intención o cierre">
             <CountUp to={data.ritual} duration={1} />
@@ -281,7 +283,10 @@ export default function HoyPage() {
       <TradingSummaryCard />
 
       {/* Cierre del día */}
-      <section>
+      <section className="space-y-3">
+        <Link href="/diario" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          Escribir en el diario <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
         <DayReview
           hour={now.getHours()}
           score={entry.score}

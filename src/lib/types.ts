@@ -45,6 +45,7 @@ export interface FocusArea {
 
 export const DEFAULT_AREAS: FocusArea[] = [
   { id: "carrera", name: "Carrera", kind: "carrera", hint: "Materias de la facultad" },
+  { id: "trading", name: "Trading", kind: "custom", hint: "Estudio, backtest y revisión de trades" },
   { id: "agencia", name: "Agencia", kind: "agencia", hint: "Sistemas, clientes y proyectos" },
 ];
 
@@ -130,6 +131,13 @@ export interface DailyEntry {
   reviewNote?: string;
   /** Puntaje del día (1–5). */
   score?: number;
+  /** Journaling libre del día. */
+  journal?: string;
+  /** Tres cosas por las que estoy agradecido. */
+  gratitude?: string;
+  /** Ánimo y energía (1–5). */
+  mood?: number;
+  energy?: number;
 }
 
 export interface PomodoroSettings {

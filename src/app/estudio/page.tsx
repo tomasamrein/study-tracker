@@ -32,7 +32,7 @@ function Estudio() {
   return (
     <div className="mx-auto max-w-5xl space-y-10">
       <header className="space-y-2">
-        <p className="eyebrow">Estudio</p>
+        <p className="eyebrow">Carrera</p>
         <h1 className="display text-5xl md:text-6xl">Estudiar mejor, no más.</h1>
         <p className="max-w-xl text-muted-foreground">
           Métodos con respaldo para ingeniería y ciencias, y el mapa de tu carrera.

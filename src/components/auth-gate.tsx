@@ -55,7 +55,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           <div className="space-y-2">
             <h1 className="display text-5xl">Foco</h1>
             <p className="text-sm text-muted-foreground">
-              Iniciá sesión para sincronizar tu enfoque, metas, hábitos y rachas.
+              Iniciá sesión para sincronizar tu segundo cerebro: diario, trading, carrera, deep work y hábitos.
             </p>
           </div>
           <Button
