@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Copy, Download, ExternalLink, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Copy, Download, ExternalLink, Pencil, Plus, Share2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { newId, useTrading } from "@/lib/trading/store";
 import { useFilteredTrades, useNames, type TradeFilters } from "@/lib/trading/selectors";
@@ -11,6 +11,7 @@ import { day, duration, money, nowInTz, pct, pnlClass, rMult } from "@/lib/tradi
 import type { Trade } from "@/lib/trading/types";
 import { FilterBar } from "@/components/trading/filter-bar";
 import { Mini } from "@/components/trading/mini";
+import { RecapDialog } from "@/components/trading/recap-dialog";
 import { TradeFormDialog, useBlankTrade } from "@/components/trading/trade-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function TradesPage() {
   const [filters, setFilters] = useState<TradeFilters>({});
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [recap, setRecap] = useState<Trade | null>(null);
   const list = useFilteredTrades(filters);
   const names = useNames();
   const blank = useBlankTrade();
@@ -138,6 +140,7 @@ export default function TradesPage() {
                     <div className="flex flex-wrap gap-1">
                       {t.shotBefore && <Button variant="outline" size="sm" asChild><a href={t.shotBefore} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Antes</a></Button>}
                       {t.shotAfter && <Button variant="outline" size="sm" asChild><a href={t.shotAfter} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /> Después</a></Button>}
+                      <Button variant="secondary" size="sm" onClick={() => setRecap(t)}><Share2 className="h-4 w-4" /> Recap</Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /> Editar</Button>
                       <Button
                         variant="ghost"
@@ -161,6 +164,7 @@ export default function TradesPage() {
         </Card>
       )}
 
+      {recap && <RecapDialog trade={recap} onClose={() => setRecap(null)} />}
       {editing && <TradeFormDialog trade={editing} onClose={() => setEditing(null)} />}
     </div>
   );

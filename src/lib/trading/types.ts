@@ -108,9 +108,14 @@ export interface Trade {
   shotBefore?: string;
   shotAfter?: string;
   tags?: string[];
+  /** Nota de calidad del setup (A+, A, B, C). */
+  grade?: TradeGrade | null;
   seed?: boolean;
   createdAt: string;
 }
+
+export const TRADE_GRADES = ["A+", "A", "B", "C"] as const;
+export type TradeGrade = (typeof TRADE_GRADES)[number];
 
 /** Ítem simple de lista editable (setups, sesiones, emociones, etiquetas). */
 export interface ListItem {
@@ -139,6 +144,8 @@ export interface TradingSettings {
   defaultAccountId: string | null;
   timeframes: string[];
   limits: PersonalLimits;
+  /** Marca que aparece en las tarjetas de recap. */
+  recapBrand?: string;
 }
 
 /** Diario del día (checklists, emoción, notas). Clave: yyyy-MM-dd. */
