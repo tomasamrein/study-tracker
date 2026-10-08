@@ -86,7 +86,10 @@ export default function EnfoquePage() {
       if (e.key === "Escape") setDeep(false);
       if (e.key === " ") {
         e.preventDefault();
-        if (pomo.running) pomo.pause();
+        if (pomo.mode === "cronometro") {
+          if (pomo.stopwatch.running) pomo.stopwatch.stop();
+          else pomo.stopwatch.start();
+        } else if (pomo.running) pomo.pause();
         else pomo.start();
       }
     };
@@ -105,31 +108,41 @@ export default function EnfoquePage() {
   const method = findMethod(pomo.methodId);
   const suggested = methodOfTheDay();
 
+  // Pomodoro o cronómetro: misma UI, distinto motor.
+  const sw = pomo.stopwatch;
+  const isSw = pomo.mode === "cronometro";
+  const running = isSw ? sw.running : pomo.running;
+  const toggle = isSw ? (sw.running ? sw.stop : sw.start) : pomo.running ? pomo.pause : pomo.start;
+  const clock = isSw ? sw.clock : `${mm}:${ss}`;
+  const modeLocked = pomo.running || sw.running;
+
   if (deep) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-10 bg-background px-6">
         <p className="eyebrow">
-          {PHASE_LABEL[pomo.phase]} · {areaName}
+          {isSw ? "Cronómetro" : PHASE_LABEL[pomo.phase]} · {areaName}
           {target ? ` · ${target}` : ""}
         </p>
         <span className="font-mono text-[22vw] leading-none font-light tracking-tighter tabular-nums md:text-[14rem]">
-          {mm}:{ss}
+          {clock}
         </span>
-        <div className="h-px w-full max-w-md bg-border">
-          <div
-            className="h-px bg-foreground transition-[width] duration-300 ease-linear"
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
+        {!isSw && (
+          <div className="h-px w-full max-w-md bg-border">
+            <div
+              className="h-px bg-foreground transition-[width] duration-300 ease-linear"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        )}
         {method && (
           <p className="max-w-md text-center text-sm text-muted-foreground">
             {method.name} — {method.focusTip}
           </p>
         )}
         <div className="flex items-center gap-2">
-          <Button size="lg" onClick={pomo.running ? pomo.pause : pomo.start} className="min-w-32">
-            {pomo.running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            {pomo.running ? "Pausar" : "Seguir"}
+          <Button size="lg" onClick={toggle} className="min-w-32">
+            {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {running ? (isSw ? "Pausar y guardar" : "Pausar") : isSw ? "Empezar" : "Seguir"}
           </Button>
           <Button size="lg" variant="outline" onClick={() => setDeep(false)}>
             <Minimize2 className="h-4 w-4" />
@@ -137,7 +150,7 @@ export default function EnfoquePage() {
           </Button>
         </div>
         <p className="font-mono text-[11px] text-muted-foreground">
-          Espacio: pausar · Esc: salir
+          Espacio: {isSw ? "pausar y guardar" : "pausar"} · Esc: salir
         </p>
       </div>
     );
@@ -157,10 +170,39 @@ export default function EnfoquePage() {
         {/* Timer */}
         <Card>
           <CardContent className="flex flex-col items-center gap-8 py-6">
-            <div className="flex w-full items-center justify-between">
-              <span className="eyebrow">
-                {PHASE_LABEL[pomo.phase]} · {pomo.completedInCycle}/{settings.roundsBeforeLongBreak}
-              </span>
+            <div className="flex w-full items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex rounded-md border p-0.5" role="tablist" aria-label="Modo de timer">
+                  {(
+                    [
+                      ["pomodoro", "Pomodoro"],
+                      ["cronometro", "Cronómetro"],
+                    ] as const
+                  ).map(([m, text]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      role="tab"
+                      aria-selected={pomo.mode === m}
+                      disabled={modeLocked && pomo.mode !== m}
+                      onClick={() => pomo.setMode(m)}
+                      className={cn(
+                        "rounded px-2.5 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                        pomo.mode === m
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+                {!isSw && (
+                  <span className="eyebrow hidden sm:inline">
+                    {PHASE_LABEL[pomo.phase]} · {pomo.completedInCycle}/{settings.roundsBeforeLongBreak}
+                  </span>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -174,14 +216,20 @@ export default function EnfoquePage() {
 
             <div className="flex flex-col items-center gap-5">
               <span className="font-mono text-7xl leading-none font-light tracking-tighter tabular-nums sm:text-8xl">
-                {mm}:{ss}
+                {clock}
               </span>
-              <div className="h-px w-64 bg-border">
-                <div
-                  className="h-px bg-foreground transition-[width] duration-300 ease-linear"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
+              {isSw ? (
+                <p className="w-64 text-center text-xs text-muted-foreground">
+                  {sw.running ? "Al pausar se guarda el tiempo." : "Empezá y pausá cuando quieras."}
+                </p>
+              ) : (
+                <div className="h-px w-64 bg-border">
+                  <div
+                    className="h-px bg-foreground transition-[width] duration-300 ease-linear"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 {areaName}
                 {target ? ` · ${target}` : ""}
@@ -189,10 +237,10 @@ export default function EnfoquePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button size="lg" onClick={pomo.running ? pomo.pause : pomo.start} className="min-w-36">
-                {pomo.running ? (
+              <Button size="lg" onClick={toggle} className="min-w-36">
+                {running ? (
                   <>
-                    <Pause className="h-4 w-4" /> Pausar
+                    <Pause className="h-4 w-4" /> {isSw ? "Pausar y guardar" : "Pausar"}
                   </>
                 ) : (
                   <>
@@ -200,15 +248,30 @@ export default function EnfoquePage() {
                   </>
                 )}
               </Button>
-              <Button size="lg" variant="outline" onClick={pomo.reset} aria-label="Reiniciar">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={pomo.skip} aria-label="Saltar fase">
-                <SkipForward className="h-4 w-4" />
-              </Button>
+              {isSw ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={sw.discard}
+                  disabled={!sw.running}
+                  aria-label="Descartar sin guardar"
+                  title="Descartar sin guardar"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              ) : (
+                <>
+                  <Button size="lg" variant="outline" onClick={pomo.reset} aria-label="Reiniciar">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={pomo.skip} aria-label="Saltar fase">
+                    <SkipForward className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
 
-            {!pomo.running && pomo.phase === "focus" && (
+            {!isSw && !pomo.running && pomo.phase === "focus" && (
               <div className="flex items-center gap-1.5">
                 {PRESETS.map((m) => (
                   <button
@@ -237,7 +300,11 @@ export default function EnfoquePage() {
           <Card>
             <CardHeader>
               <CardTitle>¿En qué te enfocás?</CardTitle>
-              <CardDescription>El tiempo se imputa a esta área al terminar cada foco.</CardDescription>
+              <CardDescription>
+                {isSw
+                  ? "El tiempo se imputa a esta área al pausar el cronómetro."
+                  : "El tiempo se imputa a esta área al terminar cada foco."}
+</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-1.5">

@@ -74,9 +74,12 @@ export default function HoyPage() {
   const weekGoals = goals.filter((g) => g.horizon === "semana").slice(0, 4);
   const nofap = findNofap(vices);
   const areaName = areas.find((a) => a.id === pomo.areaId)?.name ?? "Carrera";
+  const timerActive = pomo.running || pomo.stopwatch.running;
 
   const startFocus = () => {
-    if (!pomo.running && pomo.phase === "focus") pomo.start();
+    if (pomo.mode === "cronometro") {
+      if (!pomo.stopwatch.running) pomo.stopwatch.start();
+    } else if (!pomo.running && pomo.phase === "focus") pomo.start();
     router.push("/enfoque");
   };
 
@@ -118,10 +121,15 @@ export default function HoyPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Button size="lg" onClick={startFocus} className="min-w-44">
                 <Play className="h-4 w-4" />
-                {pomo.running ? "Volver al foco" : "Empezar deep work"}
+                {timerActive ? "Volver al foco" : "Empezar deep work"}
               </Button>
               <span className="text-sm text-muted-foreground">
-                {areaName} · {pomo.running ? "en curso" : `${store.settings.focusMinutes}′`}
+                {areaName} ·{" "}
+                {timerActive
+                  ? "en curso"
+                  : pomo.mode === "cronometro"
+                    ? "cronómetro"
+                    : `${store.settings.focusMinutes}′`}
               </span>
             </div>
           </CardContent>

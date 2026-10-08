@@ -251,7 +251,7 @@ function Resumen() {
                     key={s.id}
                     className="flex items-center gap-3 px-6 py-2.5"
                   >
-                    {s.source === "pomodoro" ? (
+                    {s.source !== "manual" ? (
                       <Timer className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                     ) : (
                       <PencilLine className="h-4 w-4 shrink-0 text-muted-foreground" />

@@ -67,7 +67,7 @@ export interface StudySession {
   /** Minutos efectivos de estudio (sólo foco, sin descansos). */
   minutes: number;
   /** Origen de la sesión. */
-  source: "pomodoro" | "manual";
+  source: "pomodoro" | "cronometro" | "manual";
   note?: string;
 }
 

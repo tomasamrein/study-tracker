@@ -177,9 +177,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function TimerPill({ className }: { className?: string }) {
   const pomo = usePomodoroContext();
   const pathname = usePathname();
-  if (!pomo.running || pathname.startsWith("/enfoque")) return null;
+  const sw = pomo.stopwatch;
+  if ((!pomo.running && !sw.running) || pathname.startsWith("/enfoque")) return null;
   const mm = String(Math.floor(pomo.remaining / 60)).padStart(2, "0");
   const ss = String(pomo.remaining % 60).padStart(2, "0");
+  const text = sw.running
+    ? `Cronómetro ${sw.clock}`
+    : `${pomo.phase === "focus" ? "Foco" : "Descanso"} ${mm}:${ss}`;
   return (
     <Link
       href="/enfoque"
@@ -192,7 +196,7 @@ function TimerPill({ className }: { className?: string }) {
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-foreground opacity-60" />
         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-foreground" />
       </span>
-      {pomo.phase === "focus" ? "Foco" : "Descanso"} {mm}:{ss}
+      {text}
     </Link>
   );
 }
