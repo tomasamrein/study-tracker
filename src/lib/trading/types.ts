@@ -108,9 +108,14 @@ export interface Trade {
   shotBefore?: string;
   shotAfter?: string;
   tags?: string[];
+  /** Nota de calidad del setup (A+, A, B, C). */
+  grade?: TradeGrade | null;
   seed?: boolean;
   createdAt: string;
 }
+
+export const TRADE_GRADES = ["A+", "A", "B", "C"] as const;
+export type TradeGrade = (typeof TRADE_GRADES)[number];
 
 /** Ítem simple de lista editable (setups, sesiones, emociones, etiquetas). */
 export interface ListItem {

@@ -6,7 +6,7 @@ import { newId, useTrading } from "@/lib/trading/store";
 import { tradeMetrics, validateTrade } from "@/lib/trading/calc";
 import { sizeViolation } from "@/lib/trading/risk";
 import { duration, money, nowInTz, pnlClass, rMult } from "@/lib/trading/format";
-import type { Direction, Trade } from "@/lib/trading/types";
+import { TRADE_GRADES, type Direction, type Trade } from "@/lib/trading/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -222,6 +222,22 @@ export function TradeFormDialog({ trade, onClose }: { trade: Trade; onClose: () 
             <Field label="Sesión">
               <ListSelect value={d.sessionId} items={state.sessions} onChange={(v) => set({ sessionId: v })} />
             </Field>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Nota del setup</Label>
+            <div className="flex gap-1.5">
+              {TRADE_GRADES.map((g) => (
+                <button
+                  type="button"
+                  key={g}
+                  onClick={() => set({ grade: d.grade === g ? null : g })}
+                  className={cn("h-8 w-12 rounded-md border text-sm", d.grade === g ? "border-foreground bg-foreground text-background" : "text-muted-foreground")}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
