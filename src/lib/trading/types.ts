@@ -144,8 +144,6 @@ export interface TradingSettings {
   defaultAccountId: string | null;
   timeframes: string[];
   limits: PersonalLimits;
-  /** Marca que aparece en las tarjetas de recap. */
-  recapBrand?: string;
 }
 
 /** Diario del día (checklists, emoción, notas). Clave: yyyy-MM-dd. */

@@ -18,13 +18,20 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export function RecapDialog({ trade, onClose }: { trade: Trade; onClose: () => void }) {
-  const { state, updateSettings } = useTrading();
+  const { state } = useTrading();
+  const names = useMemo(
+    () => ({
+      setup: state.setups.find((x) => x.id === trade.setupId)?.name,
+      session: state.sessions.find((x) => x.id === trade.sessionId)?.name,
+      mode: state.modes.find((x) => x.id === trade.modeId)?.name,
+    }),
+    [state.setups, state.sessions, state.modes, trade.setupId, trade.sessionId, trade.modeId],
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [title, setTitle] = useState("Trade del día");
   const [showMoney, setShowMoney] = useState(true);
-  const brand = state.settings.recapBrand ?? "Foco Trading";
 
   const instrument = state.instruments.find((i) => i.id === trade.instrumentId);
   const account = state.accounts.find((a) => a.id === trade.accountId);
@@ -47,16 +54,26 @@ export function RecapDialog({ trade, onClose }: { trade: Trade; onClose: () => v
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
-    const font = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+    const css = getComputedStyle(document.documentElement);
+    const v = (name: string, fb: string) => css.getPropertyValue(name).trim() || fb;
+    const fonts = {
+      sans: v("--font-geist", "system-ui, sans-serif"),
+      serif: v("--font-instrument-serif", "Georgia, serif"),
+      mono: v("--font-geist-mono", "ui-monospace, monospace"),
+    };
     let dateLabel = trade.entryAt;
     try {
-      dateLabel = format(parseISO(trade.entryAt), "d 'de' MMMM 'de' yyyy · HH:mm", { locale: es });
+      dateLabel = format(parseISO(trade.entryAt), "d MMM yyyy · HH:mm", { locale: es });
     } catch {}
-    drawRecap(
+    const context = [names.setup, names.session, names.mode].filter(Boolean).join("  ·  ");
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (cancelled) return;
+      drawRecap(
       c,
       {
-        brand,
         title,
+        context,
         instrument: instrument?.symbol ?? "",
         direction: trade.direction,
         r: m.r,
@@ -72,9 +89,13 @@ export function RecapDialog({ trade, onClose }: { trade: Trade; onClose: () => v
         dateLabel,
         image,
       },
-      font,
-    );
-  }, [trade, m, image, title, brand, showMoney, quality, instrument, state.settings.currency]);
+      fonts,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [trade, m, image, title, showMoney, quality, instrument, names, state.settings.currency]);
 
   const loadFile = (file: File) => {
     if (!file.type.startsWith("image/")) return toast.error("El archivo tiene que ser una imagen.");
@@ -151,10 +172,6 @@ export function RecapDialog({ trade, onClose }: { trade: Trade; onClose: () => v
             <div className="space-y-1.5">
               <Label>Título</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Marca</Label>
-              <Input value={brand} onChange={(e) => updateSettings({ recapBrand: e.target.value })} />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="money" checked={showMoney} onCheckedChange={setShowMoney} />
