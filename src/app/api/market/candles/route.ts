@@ -80,6 +80,8 @@ async function fromFutures(sym: Sym, from: Date, to: Date): Promise<Candle[]> {
   const p2 = Math.floor(to.getTime() / 1000);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(SYMBOLS[sym].futures)}?interval=1m&period1=${p1}&period2=${p2}&includePrePost=true`;
   const r = await fetch(url, { headers: { "User-Agent": UA }, cache: "no-store" });
+  // 422 = el día está fuera de la ventana de 1m (~30 días): sin datos, no es un error.
+  if (r.status === 422) return [];
   if (!r.ok) throw new Error(`Yahoo respondió ${r.status}`);
   const json = (await r.json()) as YahooChart;
   const res = json.chart?.result?.[0];
