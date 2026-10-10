@@ -85,7 +85,7 @@ export interface FvgOptions {
   showDead: boolean;
 }
 
-export const DEFAULT_FVG: FvgOptions = { minSize: 2, showFvg: true, showIfvg: true, maxZones: 12, showDead: false };
+export const DEFAULT_FVG: FvgOptions = { minSize: 4, showFvg: true, showIfvg: true, maxZones: 6, showDead: false };
 
 /**
  * Fair Value Gaps e Inversion FVGs.

@@ -586,7 +586,7 @@ export default function BacktestPage() {
       <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
         {/* ---- Gráfico + controles de replay ---- */}
         <div className="space-y-2">
-          <div className="relative h-[62vh] min-h-[380px] overflow-hidden rounded-lg border" style={{ background: settings.colors.background }}>
+          <div className="relative h-[calc(100vh-290px)] min-h-[360px] overflow-hidden rounded-lg border" style={{ background: settings.colors.background }}>
             {core.cursor < 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
                 <p>Elegí instrumento y fecha de inicio, y tocá <b>Cargar sesión</b>.</p>

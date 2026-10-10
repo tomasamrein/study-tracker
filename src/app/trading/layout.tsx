@@ -12,11 +12,7 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
   // El backtesting necesita todo el ancho para el gráfico.
   if (pathname.startsWith("/trading/backtest")) {
     return (
-      <div className="space-y-4">
-        <header className="flex items-baseline gap-3">
-          <p className="eyebrow">Trading</p>
-          <h1 className="display text-3xl">Backtest</h1>
-        </header>
+      <div className="-mt-2 space-y-3 md:-mt-4">
         <TradingNav />
         <div>{children}</div>
       </div>
