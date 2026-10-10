@@ -8,7 +8,6 @@ import { ALL_MODES } from "@/lib/trading/types";
 
 const TABS = [
   { href: "/trading", label: "Hoy" },
-  { href: "/trading/backtest", label: "Backtest" },
   { href: "/trading/trades", label: "Trades" },
   { href: "/trading/calendario", label: "Calendario" },
   { href: "/trading/estadisticas", label: "Estadísticas" },

@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Datos de mercado para el backtesting (se ejecuta en el server, sin bundlear).
-  serverExternalPackages: ["dukascopy-node"],
   images: {
     remotePatterns: [
       // Fotos de perfil de Google (Firebase Auth).

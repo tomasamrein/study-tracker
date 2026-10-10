@@ -1,23 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useTrading } from "@/lib/trading/store";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ModeToggle, TradingNav } from "@/components/trading/trading-header";
 
 export default function TradingLayout({ children }: { children: React.ReactNode }) {
   const { loaded } = useTrading();
-  const pathname = usePathname();
   if (!loaded) return <LoadingScreen />;
-  // El backtesting necesita todo el ancho para el gráfico.
-  if (pathname.startsWith("/trading/backtest")) {
-    return (
-      <div className="-mt-2 space-y-3 md:-mt-4">
-        <TradingNav />
-        <div>{children}</div>
-      </div>
-    );
-  }
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <header className="space-y-2">
