@@ -85,6 +85,8 @@ interface Props {
 }
 
 const ts = (t: number) => t as UTCTimestamp;
+/** Redondea al tick de NQ/ES (0,25). */
+const tick = (p: number) => Math.round(p * 4) / 4;
 
 /** Pasa cajas y rayos (en tiempo real) al primitive, convertidos a la zona del gráfico. */
 function renderZones(z: ZonesPrimitive | null, cur: Props, times: number[], preview: Box | null) {
@@ -198,7 +200,7 @@ export function ReplayChart(p: Props) {
         el.releasePointerCapture(e.pointerId);
       } catch {}
       const ref = priceLineRefs.current.get(id);
-      if (ref) props.current.onLineDrag(id, Math.round(ref.def.price * 100) / 100);
+      if (ref) props.current.onLineDrag(id, tick(ref.def.price));
     };
     el.addEventListener("pointerdown", onDown, true);
     el.addEventListener("pointermove", onMove);
@@ -210,7 +212,7 @@ export function ReplayChart(p: Props) {
       if (tool === "none" || !param.point) return;
       const price = series.coordinateToPrice(param.point.y) as number | null;
       if (price == null) return;
-      const rounded = Math.round(price * 100) / 100;
+      const rounded = tick(price);
       if (tool === "hline") {
         props.current.onDraw({ kind: "hline", price: rounded });
         return;
