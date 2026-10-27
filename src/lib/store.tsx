@@ -21,7 +21,7 @@ import {
   weeklySummary,
 } from "./stats";
 import { toast } from "sonner";
-import { defaultHabits, defaultVices, migrateLife, sameArea } from "./life";
+import { defaultHabits, defaultVices, ensureCoreHabits, migrateLife, sameArea } from "./life";
 import {
   DEFAULT_AREAS,
   DEFAULT_DAILY_GOAL_MINUTES,
@@ -40,6 +40,14 @@ import {
 } from "./types";
 
 const STATE_VERSION = 3;
+
+/** Suma las metas diarias fijas (No fap, Trading, Estudio facultad). */
+function withCoreHabits(
+  life: Pick<AppState, "habits" | "vices">,
+  habitLog: Record<string, string[]>,
+): Pick<AppState, "habits" | "vices" | "habitLog"> {
+  return { vices: life.vices, ...ensureCoreHabits(life.habits, habitLog, life.vices) };
+}
 
 /** Hábitos, contadores y metas con los que arranca la app (v2). */
 function seedSuccess(): Pick<AppState, "habits" | "vices" | "goals"> {
@@ -105,7 +113,7 @@ function freshState(user?: AuthUser | null): AppState {
     planMeta: meta,
     areas: DEFAULT_AREAS.map((a) => ({ ...a })),
     ...seedSuccess(),
-    habitLog: {},
+    ...withCoreHabits(seedSuccess(), {}),
     daily: {},
     version: STATE_VERSION,
   };
@@ -130,10 +138,12 @@ function mergeWithSeed(saved: AppState, user?: AuthUser | null): AppState {
     planMeta: saved.planMeta ?? null,
     areas: withDefaultAreas(saved.areas),
     goals: saved.goals ?? seeds?.goals ?? [],
-    ...((saved.version ?? 1) < 3
-      ? migrateLife(saved.habits ?? seeds?.habits ?? [], saved.vices ?? seeds?.vices ?? [], new Date().toISOString())
-      : { habits: saved.habits ?? [], vices: saved.vices ?? [] }),
-    habitLog: saved.habitLog ?? {},
+    ...withCoreHabits(
+      (saved.version ?? 1) < 3
+        ? migrateLife(saved.habits ?? seeds?.habits ?? [], saved.vices ?? seeds?.vices ?? [], new Date().toISOString())
+        : { habits: saved.habits ?? [], vices: saved.vices ?? [] },
+      saved.habitLog ?? {},
+    ),
     daily: saved.daily ?? {},
     version: STATE_VERSION,
   };

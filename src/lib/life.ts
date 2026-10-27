@@ -2,12 +2,13 @@
  * Hábitos y contadores por defecto del "segundo cerebro" y la migración que
  * los aplica sobre datos guardados sin perder lo que cargó el usuario.
  */
+import { differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
 import type { FocusArea, Habit, Vice } from "./types";
 
 export const NOFAP_ID = "v-nofap";
 
 export const DEFAULT_HABITS: Pick<Habit, "id" | "name" | "kind">[] = [
-  { id: "h-trading", name: "2 h de trading", kind: "build" },
+  { id: "h-trading", name: "Trading", kind: "build" },
   { id: "h-ejercicio", name: "Gimnasio", kind: "build" },
   { id: "h-lectura", name: "Leer 20 minutos", kind: "build" },
   { id: "h-dormir", name: "Dormir antes de las 00", kind: "build" },
@@ -68,4 +69,44 @@ export function findNofap(vices: Vice[]): Vice | undefined {
 /** Evita duplicar un área por defecto si el usuario ya creó una con el mismo nombre. */
 export function sameArea(a: FocusArea, b: FocusArea): boolean {
   return a.id === b.id || a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+}
+
+/** Las metas diarias más importantes: se muestran como rachas grandes. */
+export const CORE_HABITS: Pick<Habit, "id" | "name" | "kind">[] = [
+  { id: "h-nofap", name: "No fap", kind: "avoid" },
+  { id: "h-trading", name: "Trading", kind: "build" },
+  { id: "h-facultad", name: "Estudio facultad", kind: "build" },
+];
+export const CORE_IDS = new Set(CORE_HABITS.map((h) => h.id));
+
+/**
+ * Garantiza que existan las metas diarias (al frente y con su nombre). La
+ * primera vez que aparece "No fap" como hábito, rellena el historial con los
+ * días limpio que ya llevaba el contador viejo para no perder la racha.
+ */
+export function ensureCoreHabits(
+  habits: Habit[],
+  habitLog: Record<string, string[]>,
+  vices: Vice[],
+  now: Date = new Date(),
+): { habits: Habit[]; habitLog: Record<string, string[]> } {
+  const byId = new Map(habits.map((h) => [h.id, h]));
+  const core = CORE_HABITS.map((c) => ({
+    createdAt: now.toISOString(),
+    ...byId.get(c.id),
+    ...c,
+    archived: false,
+  }));
+  const rest = habits.filter((h) => !CORE_IDS.has(h.id));
+  let log = habitLog;
+  const nofap = findNofap(vices);
+  if (!byId.has("h-nofap") && nofap) {
+    log = { ...habitLog };
+    const days = Math.max(0, differenceInCalendarDays(now, parseISO(nofap.since)));
+    for (let i = 1; i <= days; i++) {
+      const k = format(subDays(now, i), "yyyy-MM-dd");
+      log[k] = [...(log[k] ?? []).filter((x) => x !== "h-nofap"), "h-nofap"];
+    }
+  }
+  return { habits: [...core, ...rest], habitLog: log };
 }

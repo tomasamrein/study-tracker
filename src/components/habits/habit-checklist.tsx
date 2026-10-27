@@ -3,20 +3,21 @@
 import { Check } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { habitStreak } from "@/lib/habits";
+import { CORE_IDS } from "@/lib/life";
 import { dayKey } from "@/lib/stats";
 import { Spark } from "@/components/spark";
 import { cn } from "@/lib/utils";
 
-/** Lista de hábitos del día con check y racha. */
+/** Lista de hábitos del día con check y racha (sin las metas diarias). */
 export function HabitChecklist({ day = dayKey() }: { day?: string }) {
   const { habits, habitLog, toggleHabit } = useStore();
-  const active = habits.filter((h) => !h.archived);
+  const active = habits.filter((h) => !h.archived && !CORE_IDS.has(h.id));
   const done = habitLog[day] ?? [];
 
   if (active.length === 0) {
     return (
       <p className="py-4 text-sm text-muted-foreground">
-        Todavía no tenés hábitos. Sumalos desde la sección Hábitos.
+        Sin otros hábitos. Sumalos desde la sección Hábitos.
       </p>
     );
   }

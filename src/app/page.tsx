@@ -18,11 +18,10 @@ import {
   weeklySummary,
 } from "@/lib/stats";
 import { methodOfTheDay } from "@/lib/methods";
-import { daysClean } from "@/lib/habits";
-import { findNofap } from "@/lib/life";
+import { habitBestStreak, habitStreak } from "@/lib/habits";
 import { LoadingScreen } from "@/components/loading-screen";
 import { HabitChecklist } from "@/components/habits/habit-checklist";
-import { ViceCounter } from "@/components/habits/vice-counter";
+import { DailyStreaks } from "@/components/habits/daily-streaks";
 import { GoalProgressRow } from "@/components/goals/goal-progress-row";
 import { Spark } from "@/components/spark";
 import BlurText from "@/components/react-bits/BlurText";
@@ -44,7 +43,7 @@ function greeting(h: number) {
 
 export default function HoyPage() {
   const store = useStore();
-  const { loaded, sessions, dailyGoalMinutes, vices, goals, areas, daily, setDaily } = store;
+  const { loaded, sessions, dailyGoalMinutes, habitLog, goals, areas, daily, setDaily } = store;
   const { user } = useAuth();
   const pomo = usePomodoroContext();
   const router = useRouter();
@@ -72,7 +71,6 @@ export default function HoyPage() {
   const method = methodOfTheDay(now);
   const goalPct = dailyGoalMinutes > 0 ? Math.min(100, (data.todayMin / dailyGoalMinutes) * 100) : 0;
   const weekGoals = goals.filter((g) => g.horizon === "semana").slice(0, 4);
-  const nofap = findNofap(vices);
   const areaName = areas.find((a) => a.id === pomo.areaId)?.name ?? "Carrera";
   const timerActive = pomo.running || pomo.stopwatch.running;
 
@@ -146,9 +144,9 @@ export default function HoyPage() {
           </Metric>
           <Metric
             label="Días de no fap"
-            hint={nofap ? `mejor racha ${Math.max(nofap.best, daysClean(nofap))} d` : "creá el contador en Hábitos"}
+            hint={`mejor racha ${habitBestStreak(habitLog, "h-nofap")} d`}
           >
-            <CountUp to={nofap ? daysClean(nofap) : 0} duration={1} />
+            <CountUp to={habitStreak(habitLog, "h-nofap")} duration={1} />
             <span className="ml-1 font-sans text-sm text-muted-foreground">d</span>
           </Metric>
           <Metric label="Ritual" hint="días con intención o cierre">
@@ -184,7 +182,7 @@ export default function HoyPage() {
         <Card>
           <CardHeader className="flex flex-row items-start justify-between">
             <div className="space-y-1">
-              <CardTitle>Hábitos</CardTitle>
+              <CardTitle>Otros hábitos</CardTitle>
               <CardDescription>Marcá lo que ya cumpliste hoy.</CardDescription>
             </div>
             <Link href="/habitos" className="text-xs text-muted-foreground hover:text-foreground">
@@ -273,17 +271,11 @@ export default function HoyPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Detox de dopamina</CardTitle>
-            <CardDescription>Días limpio desde la última recaída.</CardDescription>
+            <CardTitle>Rachas diarias</CardTitle>
+            <CardDescription>No fap, trading y facultad: marcalas hoy.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
-            {vices.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Sin contadores. Sumalos en <Link href="/habitos" className="underline">Hábitos</Link>.
-              </p>
-            ) : (
-              vices.map((v) => <ViceCounter key={v.id} vice={v} />)
-            )}
+          <CardContent>
+            <DailyStreaks compact />
           </CardContent>
         </Card>
       </section>
